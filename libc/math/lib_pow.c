@@ -5,6 +5,7 @@
  *
  *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
  *   Ported by: Darcy Gong
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * It derives from the Rhombus OS math library by Nick Johnson which has
  * a compatibile, MIT-style license:
@@ -33,6 +34,7 @@
 #include <nuttx/compiler.h>
 
 #include <math.h>
+#include <stdint.h>
 
 /****************************************************************************
  * Public Functions
@@ -41,6 +43,54 @@
 #ifdef CONFIG_HAVE_DOUBLE
 double pow(double b, double e)
 {
-  return exp(e * log(b));
+  double ret;
+  double ip;
+
+  if (e == 0.0)
+    {
+      return 1.0;
+    }
+
+  if ((b == -1.0) && ((e == INFINITY) || (e == -INFINITY)))
+    {
+      return 1.0;
+    }
+
+  if (b == 1.0)
+    {
+      return b;
+    }
+  else if (b > 0.0)
+    {
+      return exp(e * log(b));
+    }
+  else
+    {
+      modf(e, &ip);
+
+      if (b < 0.0)
+        {
+          if (e == ip)
+            {
+              ret = exp(e * log(-b));
+              return ((int64_t)e % 2) ? -ret : ret;
+            }
+        }
+      else if (b == 0.0)
+        {
+          if (e > 0.0)
+            {
+              return b;
+            }
+          else if (e < 0.0)
+            {
+              if (e == ip)
+                {
+                  return (*(uint64_t *)&b) ? -INFINITY : INFINITY;
+                }
+            }
+        }
+    }
+  return NAN;
 }
 #endif

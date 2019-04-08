@@ -265,6 +265,7 @@ static int romfs_open(FAR struct file *filep, FAR const char *relpath,
   if (ret < 0)
     {
       ferr("ERROR: Failed to locate start of file data: %d\n", ret);
+      kmm_free(rf);
       goto errout_with_semaphore;
     }
 

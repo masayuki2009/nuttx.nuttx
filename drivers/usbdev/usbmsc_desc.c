@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2011-2012, 2015, 2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -348,7 +349,11 @@ int16_t usbmsc_mkcfgdesc(uint8_t *buf,
     FAR struct usb_cfgdesc_s *dest = (FAR struct usb_cfgdesc_s *)buf;
 
     dest->len         = USB_SIZEOF_CFGDESC;               /* Descriptor length */
+#ifdef CONFIG_USBDEV_DUALSPEED
+    dest->type        = type;                             /* Descriptor type */
+#else
     dest->type        = USB_DESC_TYPE_CONFIG;             /* Descriptor type */
+#endif
     dest->totallen[0] = LSBYTE(SIZEOF_USBMSC_CFGDESC);    /* LS Total length */
     dest->totallen[1] = MSBYTE(SIZEOF_USBMSC_CFGDESC);    /* MS Total length */
     dest->ninterfaces = USBMSC_NINTERFACES;               /* Number of interfaces */

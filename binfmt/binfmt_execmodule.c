@@ -204,6 +204,7 @@ int exec_module(FAR const struct binary_s *binp)
     {
       errcode = get_errno();
       berr("task_init() failed: %d\n", errcode);
+      kumm_free(stack);
       goto errout_with_addrenv;
     }
 

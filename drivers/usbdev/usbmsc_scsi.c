@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2008-2010, 2012, 2016 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Mass storage class device.  Bulk-only with SCSI subclass.
  *
@@ -1545,7 +1546,7 @@ static int inline usbmsc_setupcmd(FAR struct usbmsc_dev_s *priv,
       /* Clip to the length in the CBW and declare a phase error */
 
       usbtrace(TRACE_CLSERROR(USBMSC_TRACEERR_PHASEERROR1), priv->cdb[0]);
-      if ((flags & USBMSC_FLAGS_BLOCKXFR) != 0)
+      if ((flags & USBMSC_FLAGS_BLOCKXFR) == 0)
         {
           priv->u.alloclen = priv->cbwlen;
         }
@@ -1751,7 +1752,7 @@ static int usbmsc_idlestate(FAR struct usbmsc_dev_s *priv)
       /* Return the read request to the bulk out endpoint for re-filling */
 
       req           = privreq->req;
-      req->len      = CONFIG_USBMSC_BULKOUTREQLEN;
+      req->len      = priv->epbulkout->maxpacket;
       req->priv     = privreq;
       req->callback = usbmsc_rdcomplete;
 
@@ -2010,11 +2011,9 @@ static int usbmsc_cmdparsestate(FAR struct usbmsc_dev_s *priv)
 
     default:
       priv->u.alloclen = 0;
-      if (ret == OK)
-        {
-          priv->lun->sd = SCSI_KCQIR_INVALIDCOMMAND;
-          ret = -EINVAL;
-        }
+      priv->residue = priv->cbwlen;
+      priv->lun->sd = SCSI_KCQIR_INVALIDCOMMAND;
+      ret = -EINVAL;
       break;
     }
 
@@ -2180,7 +2179,7 @@ static int usbmsc_cmdreadstate(FAR struct usbmsc_dev_s *priv)
       src    = &priv->iobuffer[lun->sectorsize - priv->nsectbytes];
       dest   = &req->buf[priv->nreqbytes];
 
-      nbytes = MIN(CONFIG_USBMSC_BULKINREQLEN - priv->nreqbytes, priv->nsectbytes);
+      nbytes = MIN(priv->epbulkin->maxpacket - priv->nreqbytes, priv->nsectbytes);
 
       /* Copy the data from the sector buffer to the USB request and update counts */
 
@@ -2192,7 +2191,7 @@ static int usbmsc_cmdreadstate(FAR struct usbmsc_dev_s *priv)
        * then submit the request
        */
 
-      if (priv->nreqbytes >= CONFIG_USBMSC_BULKINREQLEN ||
+      if (priv->nreqbytes >= priv->epbulkin->maxpacket ||
           (priv->u.xfrlen <= 0 && priv->nsectbytes <= 0))
         {
           /* Remove the request that we just filled from wrreqlist (we've already checked
@@ -2350,7 +2349,7 @@ static int usbmsc_cmdwritestate(FAR struct usbmsc_dev_s *priv)
        * to get the next read request.
        */
 
-      req->len      = CONFIG_USBMSC_BULKOUTREQLEN;
+      req->len      = priv->epbulkout->maxpacket;
       req->priv     = privreq;
       req->callback = usbmsc_rdcomplete;
 
@@ -2362,7 +2361,7 @@ static int usbmsc_cmdwritestate(FAR struct usbmsc_dev_s *priv)
 
       /* Did the host decide to stop early? */
 
-      if (xfrd != CONFIG_USBMSC_BULKOUTREQLEN)
+      if (xfrd != priv->epbulkout->maxpacket)
         {
           priv->shortpacket = 1;
           goto errout;
@@ -2727,12 +2726,15 @@ int usbmsc_scsi_main(int argc, char *argv[])
       if ((eventset & (USBMSC_EVENT_DISCONNECT | USBMSC_EVENT_RESET | USBMSC_EVENT_CFGCHANGE |
                        USBMSC_EVENT_IFCHANGE | USBMSC_EVENT_ABORTBULKOUT)) != 0)
         {
+#if 0
           /* These events require that the current configuration be reset */
+          /* XXX: Set Interface should be use configured value, so disable it. */
 
           if ((eventset & USBMSC_EVENT_IFCHANGE) != 0)
             {
               usbmsc_resetconfig(priv);
             }
+#endif
 
           /* These events require that a new configuration be established */
 

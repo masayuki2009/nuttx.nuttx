@@ -194,6 +194,7 @@ int timer_create(clockid_t clockid, FAR struct sigevent *evp,
   if (!ret)
     {
       set_errno(EAGAIN);
+      (void)wd_delete(wdog);
       return ERROR;
     }
 

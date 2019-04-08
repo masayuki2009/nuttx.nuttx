@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2008-2013, 2015, 2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Mass storage class device.  Bulk-only with SCSI subclass.
  *
@@ -69,7 +70,7 @@
 #endif
 
 #if defined(CONFIG_USBMSC_COMPOSITE) && !defined(CONFIG_USBMSC_STRBASE)
-#  define CONFIG_USBMSC_STRBASE (4)
+#  define CONFIG_USBMSC_STRBASE (0)
 #endif
 
 /* Interface IDs.  If the mass storage driver is built as a component of a

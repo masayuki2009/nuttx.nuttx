@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2011-2012, 2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -222,7 +223,11 @@ int16_t composite_mkcfgdesc(FAR struct composite_dev_s *priv, FAR uint8_t *buf)
   /* Fill in the values directly into the buf */
 
   cfgdesc->len         = USB_SIZEOF_CFGDESC;               /* Descriptor length */
+#ifdef CONFIG_USBDEV_DUALSPEED
+  cfgdesc->type        = type;                             /* Descriptor type */
+#else
   cfgdesc->type        = USB_DESC_TYPE_CONFIG;             /* Descriptor type */
+#endif
   cfgdesc->totallen[0] = LSBYTE(priv->cfgdescsize);        /* Lower Byte of Total length */
   cfgdesc->totallen[1] = MSBYTE(priv->cfgdescsize);        /* High Byte of Total length */
   cfgdesc->ninterfaces = priv->ninterfaces;                /* Number of interfaces */

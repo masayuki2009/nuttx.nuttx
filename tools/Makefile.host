@@ -194,7 +194,7 @@ endif
 
 # Create dependencies for a list of files
 
-mkdeps$(HOSTEXEEXT): mkdeps.c csvparser.c
+mkdeps$(HOSTEXEEXT): mkdeps.c
 	$(Q) $(HOSTCC) $(HOSTCFLAGS) -o mkdeps$(HOSTEXEEXT) mkdeps.c
 
 ifdef HOSTEXEEXT

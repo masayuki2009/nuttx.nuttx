@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2011-2012, 2015, 2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -389,7 +390,11 @@ int16_t cdcacm_mkcfgdesc(FAR uint8_t *buf,
 #endif
 
       dest->len         = USB_SIZEOF_CFGDESC;                /* Descriptor length */
+#ifdef CONFIG_USBDEV_DUALSPEED
+      dest->type        = type;                              /* Descriptor type */
+#else
       dest->type        = USB_DESC_TYPE_CONFIG;              /* Descriptor type */
+#endif
       dest->totallen[0] = LSBYTE(size);                      /* LS Total length */
       dest->totallen[1] = MSBYTE(size);                      /* MS Total length */
       dest->ninterfaces = CDCACM_NINTERFACES;                /* Number of interfaces */

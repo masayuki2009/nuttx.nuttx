@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2013 Ken Pettit. All rights reserved.
  *   Author: Ken Pettit <pettitkd@gmail.com>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -223,7 +224,7 @@ static int smartfs_open(FAR struct file *filep, const char *relpath,
       goto errout_with_semaphore;
     }
 
-  sf->bflags = 0;
+  sf->bflags = SMARTFS_BFLAG_NEWALLOC;
 #endif  /* CONFIG_SMARTFS_USE_SECTOR_BUFFER */
 
   sf->entry.name = NULL;
@@ -362,6 +363,9 @@ errout_with_buffer:
       sf->entry.name = NULL;
     }
 
+#ifdef CONFIG_SMARTFS_USE_SECTOR_BUFFER
+  kmm_free(sf->buffer);
+#endif  /* CONFIG_SMARTFS_USE_SECTOR_BUFFER */
   kmm_free(sf);
 
 errout_with_semaphore:
@@ -1073,6 +1077,25 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs,
 
       sf->curroffset = sizeof(struct smartfs_chain_header_s) + newpos-sectorstartpos;
       sf->filepos = newpos;
+#ifdef CONFIG_SMARTFS_USE_SECTOR_BUFFER
+      if ((sf->bflags & SMARTFS_BFLAG_NEWALLOC) && !(sf->bflags & SMARTFS_BFLAG_DIRTY))
+        {
+          /* buffer read request */
+
+          readwrite.logsector = sf->currsector;
+          readwrite.offset = 0;
+          readwrite.count = fs->fs_llformat.availbytes;
+          readwrite.buffer = (uint8_t *) sf->buffer;
+          ret = FS_IOCTL(fs, BIOC_READSECT, (unsigned long) &readwrite);
+          if (ret < 0)
+            {
+              ferr("Error %d reading sector %d header\n", ret, sf->currsector);
+              goto errout;
+            }
+
+          sf->bflags = sf->bflags & ~SMARTFS_BFLAG_NEWALLOC;
+        }
+#endif  /* CONFIG_SMARTFS_USE_SECTOR_BUFFER */
 
       return newpos;
     }
@@ -1136,6 +1159,8 @@ static off_t smartfs_seek_internal(struct smartfs_mountpt_s *fs,
                ret, sf->currsector);
           goto errout;
         }
+
+      sf->bflags = sf->bflags & ~SMARTFS_BFLAG_NEWALLOC;
     }
 #endif
 

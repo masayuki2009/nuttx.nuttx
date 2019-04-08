@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2012, 2016-2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -496,8 +497,8 @@ static int composite_setup(FAR struct usbdevclass_driver_s *driver,
 
                       for (i = 0; i < priv->ndevices; i++)
                         {
-                          if (strid >= priv->device[i].compdesc.devinfo.strbase &&
-                              strid <  priv->device[i].compdesc.devinfo.strbase +
+                          if (strid >  priv->device[i].compdesc.devinfo.strbase &&
+                              strid <= priv->device[i].compdesc.devinfo.strbase +
                                        priv->device[i].compdesc.devinfo.nstrings)
                             {
                               ret = priv->device[i].compdesc.mkstrdesc(strid - priv->device[i].compdesc.devinfo.strbase, buf);

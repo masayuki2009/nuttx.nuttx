@@ -5,6 +5,7 @@
  *
  *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
  *   Ported by: Darcy Gong
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * It derives from the Rhombus OS math library by Nick Johnson which has
  * a compatibile, MIT-style license:
@@ -30,6 +31,7 @@
  ****************************************************************************/
 
 #include <math.h>
+#include <stdint.h>
 
 /****************************************************************************
  * Public Functions
@@ -37,5 +39,53 @@
 
 float powf(float b, float e)
 {
-  return expf(e * logf(b));
+  float ret;
+  float ip;
+
+  if (e == 0.0F)
+    {
+      return 1.0F;
+    }
+
+  if ((b == -1.0F) && ((e == INFINITY) || (e == -INFINITY)))
+    {
+      return 1.0F;
+    }
+
+  if (b == 1.0F)
+    {
+      return b;
+    }
+  else if (b > 0.0F)
+    {
+      return expf(e * logf(b));
+    }
+  else
+    {
+      modff(e, &ip);
+
+      if (b < 0.0F)
+        {
+          if (e == ip)
+            {
+              ret = expf(e * logf(-b));
+              return ((int32_t)e % 2) ? -ret : ret;
+            }
+        }
+      else if (b == 0.0F)
+        {
+          if (e > 0.0F)
+            {
+              return b;
+            }
+          else if (e < 0.0F)
+            {
+              if (e == ip)
+                {
+                  return (*(uint32_t *)&b) ? -INFINITY : INFINITY;
+                }
+            }
+        }
+    }
+  return NAN;
 }

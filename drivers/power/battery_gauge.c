@@ -4,6 +4,7 @@
  *
  *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -51,10 +52,10 @@
 
 /* This driver requires:
  *
- * CONFIG_BATTERY - Upper half battery driver support
+ * CONFIG_BATTERY_GAUGE - Upper half battery driver support
  */
 
-#if defined(CONFIG_BATTERY)
+#if defined(CONFIG_BATTERY_GAUGE)
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -72,7 +73,7 @@
 
 static int     bat_gauge_open(FAR struct file *filep);
 static int     bat_gauge_close(FAR struct file *filep);
-static ssize_t bat_gauge_read(FAR struct file *filep, FAR char *buflen,
+static ssize_t bat_gauge_read(FAR struct file *filep, FAR char *buffer,
                  size_t buflen);
 static ssize_t bat_gauge_write(FAR struct file *filep, FAR const char *buffer,
                  size_t buflen);

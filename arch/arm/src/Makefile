@@ -108,7 +108,7 @@ CSRCS = $(CHIP_CSRCS) $(CMN_CSRCS)
 COBJS = $(CSRCS:.c=$(OBJEXT))
 
 SRCS = $(ASRCS) $(CSRCS)
-OBJS = $(AOBJS) $(COBJS)
+OBJS = $(AOBJS) $(COBJS) $(EXTRAOBJS)
 
 # User-mode objects
 

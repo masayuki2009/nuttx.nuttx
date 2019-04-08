@@ -5,6 +5,7 @@
  *
  *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
  *   Ported by: Darcy Gong
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * It derives from the Rhombus OS math library by Nick Johnson which has
  * a compatibile, MIT-style license:
@@ -40,5 +41,5 @@ float tanhf(float x)
   float x0 = expf(x);
   float x1 = 1.0F / x0;
 
-  return ((x0 + x1) / (x0 - x1));
+  return ((x0 - x1) / (x0 + x1));
 }

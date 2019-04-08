@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2011-2012, 2015, 2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -61,7 +62,7 @@
 #endif
 
 #if defined(CONFIG_CDCACM_COMPOSITE) && !defined(CONFIG_CDCACM_STRBASE)
-#  define CONFIG_CDCACM_STRBASE    (4)
+#  define CONFIG_CDCACM_STRBASE    (0)
 #endif
 
 #if defined(CONFIG_CDCACM_COMPOSITE) && !defined(CONFIG_COMPOSITE_IAD)

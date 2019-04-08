@@ -3,6 +3,7 @@
  *
  *   Copyright (C) 2011-2013, 2016-2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1359,7 +1360,7 @@ static int cdcacm_setup(FAR struct usbdevclass_driver_s *driver,
                 {
 #ifdef CONFIG_USBDEV_DUALSPEED
                   ret = cdcacm_mkcfgdesc(ctrlreq->buf, &priv->devinfo,
-                                         dev->speed, ctrl->req);
+                                         dev->speed, ctrl->value[1]);
 #else
                   ret = cdcacm_mkcfgdesc(ctrlreq->buf, &priv->devinfo);
 #endif
@@ -2431,7 +2432,7 @@ int cdcacm_classobject(int minor, FAR struct usbdev_devinfo_s *devinfo,
 
   /* Register the CDC/ACM TTY device */
 
-  sprintf(devname, CDCACM_DEVNAME_FORMAT, minor);
+  snprintf(devname, CDCACM_DEVNAME_SIZE, CDCACM_DEVNAME_FORMAT, minor);
   ret = uart_register(devname, &priv->serdev);
   if (ret < 0)
     {
@@ -2585,7 +2586,7 @@ void cdcacm_uninitialize(FAR void *handle)
 
   /* Un-register the CDC/ACM TTY device */
 
-  sprintf(devname, CDCACM_DEVNAME_FORMAT, priv->minor);
+  snprintf(devname, CDCACM_DEVNAME_SIZE, CDCACM_DEVNAME_FORMAT, priv->minor);
   ret = unregister_driver(devname);
   if (ret < 0)
     {
