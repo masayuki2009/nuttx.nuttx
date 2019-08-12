@@ -1,7 +1,7 @@
 /************************************************************************************
- * boards/arm/tiva/tm4c123g-launchpad/src/tm4c_ssi.c
+ * arch/arm/include/x32k1xx/chip.h
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,84 +33,29 @@
  *
  ************************************************************************************/
 
+#ifndef __ARCH_ARM_INCLUDE_S32K1XX_CHIP_H
+#define __ARCH_ARM_INCLUDE_S32K1XX_CHIP_H
+
 /************************************************************************************
  * Included Files
  ************************************************************************************/
 
 #include <nuttx/config.h>
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <debug.h>
-
-#include <nuttx/spi/spi.h>
-#include <arch/board/board.h>
-
-#include "up_arch.h"
-#include "chip.h"
-#include "tiva_gpio.h"
-#include "tm4c123g-launchpad.h"
-
-/* The TM4C123G LaunchPad microSD CS is on SSI0 */
-
-#if defined(CONFIG_TIVA_SSI0) || defined(CONFIG_TIVA_SSI1)
-
 /************************************************************************************
  * Pre-processor Definitions
  ************************************************************************************/
 
-#ifdef CONFIG_DEBUG_SPI_INFO
-#  define ssi_dumpgpio(m) tiva_dumpgpio(SDCCS_GPIO, m)
-#else
-#  define ssi_dumpgpio(m)
-#endif
+/************************************************************************************
+ * Public Types
+ ************************************************************************************/
+
+/************************************************************************************
+ * Public Data
+ ************************************************************************************/
 
 /************************************************************************************
  * Public Functions
  ************************************************************************************/
 
-/************************************************************************************
- * Name: tm4c_ssidev_initialize
- *
- * Description:
- *   Called to configure SPI chip select GPIO pins for the TM4C123G LaunchPad.
- *
- ************************************************************************************/
-
-void weak_function tm4c_ssidev_initialize(void)
-{
-}
-
-/****************************************************************************
- * The external functions, tiva_ssiselect and tiva_ssistatus must be provided
- * by board-specific logic.  The are implementations of the select and status
- * methods SPI interface defined by struct spi_ops_s (see include/nuttx/spi/spi.h).
- * All othermethods (including tiva_ssibus_initialize()) are provided by common
- * logic.  To use this common SPI logic on your board:
- *
- *   1. Provide tiva_ssiselect() and tiva_ssistatus() functions in your
- *      board-specific logic.  This function will perform chip selection and
- *      status operations using GPIOs in the way your board is configured.
- *   2. Add a call to tiva_ssibus_initialize() in your low level initialization
- *      logic
- *   3. The handle returned by tiva_ssibus_initialize() may then be used to bind the
- *      SPI driver to higher level logic (e.g., calling
- *      mmcsd_spislotinitialize(), for example, will bind the SPI driver to
- *      the SPI MMC/SD driver).
- *
- ****************************************************************************/
-
-void tiva_ssiselect(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
-{
-  spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
-  ssi_dumpgpio("tiva_ssiselect() Entry");
-  ssi_dumpgpio("tiva_ssiselect() Exit");
-}
-
-uint8_t tiva_ssistatus(FAR struct spi_dev_s *dev, uint32_t devid)
-{
-  spiinfo("Returning SPI_STATUS_PRESENT\n");
-  return SPI_STATUS_PRESENT;
-}
-
-#endif /* CONFIG_TIVA_SSI0 || CONFIG_TIVA_SSI1 */
+#endif /* __ARCH_ARM_INCLUDE_S32K1XX_CHIP_H */

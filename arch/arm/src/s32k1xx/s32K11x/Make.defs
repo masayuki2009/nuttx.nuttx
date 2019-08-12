@@ -1,7 +1,7 @@
 ############################################################################
-# boards/arm/tiva/tm4c123g-launchpad/src/Makefile
+# arch/arm/src/s32k1xx/x32k11x/Make.defs
 #
-#   Copyright (C) 2014-2015 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2019 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,35 +33,40 @@
 #
 ############################################################################
 
--include $(TOPDIR)/Make.defs
+# Source files specific to the Cortex-M0+
 
-ASRCS =
-CSRCS = tm4c_boot.c tm4c_bringup.c tm4c_ssi.c
+HEAD_ASRC =
 
-ifeq ($(CONFIG_ARCH_LEDS),y)
-CSRCS += tm4c_autoleds.c
+CMN_ASRCS  = up_exception.S up_saveusercontext.S up_fullcontextrestore.S
+CMN_ASRCS += up_switchcontext.S vfork.S
+
+CMN_CSRCS  = up_assert.c up_blocktask.c up_copyfullstate.c up_createstack.c
+CMN_CSRCS += up_initialstate.c up_releasepending.c up_reprioritizertr.c
+CMN_CSRCS += up_schedulesigaction.c up_sigdeliver.c up_systemreset.c
+CMN_CSRCS += up_unblocktask.c up_doirq.c up_hardfault.c up_svcall.c
+CMN_CSRCS += up_vectors.c
+
+ifeq ($(CONFIG_BUILD_PROTECTED),y)
+CMN_CSRCS += up_signal_dispatch.c
+CMN_UASRCS += up_signal_handler.S
 endif
 
-ifeq ($(CONFIG_LIB_BOARDCTL),y)
-CSRCS += tm4c_appinit.c
+ifeq ($(CONFIG_DEBUG_FEATURES),y)
+CMN_CSRCS += up_dumpnvic.c
 endif
 
-ifeq ($(CONFIG_TIVA_TIMER),y)
-CSRCS += tm4c_timer.c
+# Source file specific to the S32k11x family
+
+CHIP_ASRCS  =
+CHIP_CSRCS  = s32k11x_irq.c s32k11x_lowputc.c s32k11x_port.c s32k11x_serial.c
+CHIP_CSRCS += s32k11x_lpuart.c
+
+# Configuration-dependent S32k11x files
+
+ifneq ($(CONFIG_SCHED_TICKLESS),y)
+CHIP_CSRCS += s32k11x_timerisr.c
 endif
 
-ifeq ($(CONFIG_TIVA_ADC),y)
-CSRCS += tm4c_adc.c
-endif
+# Make sure that this directory in included in the VPATH
 
-ifeq ($(CONFIG_MTD_AT24XX),y)
-ifeq ($(CONFIG_TIVA_I2C0),y)
-CSRCS += tm4c_at24.c
-endif
-endif
-
-ifeq ($(CONFIG_ARCH_BUTTONS),y)
-CSRCS += tm4c_buttons.c
-endif
-
-include $(TOPDIR)/boards/Board.mk
+VPATH += chip/s32k11x
