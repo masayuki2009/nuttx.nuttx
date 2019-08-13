@@ -1,8 +1,8 @@
 /****************************************************************************
- * arch/arm/src/imxrt/imxrt_serial.h
+ * arch/arm/src/s32k1xx/s32k1xx_lowputc.h
  *
- *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
- *   Author: Ivan Ucherdzhiev <ivanucherdjiev@gmail.com>
+ *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
+ *   Author:  Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,43 +33,41 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_IMXRT_IMXRT_SERIAL_H
-#define __ARCH_ARM_SRC_IMXRT_IMXRT_SERIAL_H
+#ifndef __ARCH_ARM_SRC_S32K1XX_LOWPUTC_H
+#define __ARCH_ARM_SRC_S32K1XX_LOWPUTC_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/compiler.h>
+
+#include <sys/types.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "up_internal.h"
-#include "imxrt_config.h"
-
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+#include "s32k1xx_config.h"
 
 /****************************************************************************
  * Public Types
  ****************************************************************************/
 
-/****************************************************************************
- * Inline Functions
- ****************************************************************************/
+#ifdef HAVE_LPUART_DEVICE
+/* This structure describes the configuration of an UART */
 
-#ifndef __ASSEMBLY__
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-#undef EXTERN
-#if defined(__cplusplus)
-#define EXTERN extern "C"
-extern "C"
+struct uart_config_s
 {
-#else
-#define EXTERN extern
+  uint32_t baud;          /* Configured baud */
+  uint8_t  parity;        /* 0=none, 1=odd, 2=even */
+  uint8_t  bits;          /* Number of bits (5-9) */
+  bool     stopbits2;     /* true: Configure with 2 stop bits instead of 1 */
+  bool     userts;        /* True: Assert RTS when there are data to be sent */
+  bool     invrts;        /* True: Invert sense of RTS pin (true=active high) */
+  bool     usects;        /* True: Condition transmission on CTS asserted */
+  bool     users485;      /* True: Assert RTS while transmission progresses */
+};
 #endif
 
 /****************************************************************************
@@ -77,23 +75,45 @@ extern "C"
  ****************************************************************************/
 
 /****************************************************************************
- * Name: imxrt_earlyserialinit
+ * Name: s32k1xx_lowsetup
  *
  * Description:
- *   Performs the low level UART initialization early in debug so that the
- *   serial console will be available during bootup.  This must be called
- *   before up_serialinit.
+ *   Called at the very beginning of _start.  Performs low level
+ *   initialization including setup of the console UART.  This UART done
+ *   early so that the serial console is available for debugging very early
+ *   in the boot sequence.
  *
  ****************************************************************************/
 
-#ifdef USE_EARLYSERIALINIT
-void imxrt_earlyserialinit(void);
+void s32k1xx_lowsetup(void);
+
+/****************************************************************************
+ * Name: s32k1xx_lpuart_configure
+ *
+ * Description:
+ *   Configure a UART for non-interrupt driven operation
+ *
+ ****************************************************************************/
+
+#ifdef HAVE_LPUART_DEVICE
+int s32k1xx_lpuart_configure(uint32_t base,
+                             FAR const struct uart_config_s *config);
 #endif
 
-#undef EXTERN
-#if defined(__cplusplus)
-}
+/****************************************************************************
+ * Name: s32k1xx_lowputc
+ *
+ * Description:
+ *   Output a byte with as few system dependencies as possible.  This will
+ *   even work BEFORE the console is initialized if we are booting from U-
+ *   Boot (and the same UART is used for the console, of course.)
+ *
+ ****************************************************************************/
+
+#if defined(HAVE_LPUART_DEVICE) && defined(CONFIG_DEBUG_FEATURES)
+void s32k1xx_lowputc(int ch);
+#else
+#  define s32k1xx_lowputc(ch)
 #endif
 
-#endif /* __ASSEMBLY__ */
-#endif /* __ARCH_ARM_SRC_IMXRT_IMXRT_SERIAL_H */
+#endif /* __ARCH_ARM_SRC_S32K1XX_LOWPUTC_H */

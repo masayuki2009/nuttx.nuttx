@@ -1,8 +1,8 @@
 /****************************************************************************
- * arch/arm/src/imxrt/imxrt_serial.h
+ * arch/arm/src/s32k1xx/s32k1xx_serial.h
  *
- *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
- *   Author: Ivan Ucherdzhiev <ivanucherdjiev@gmail.com>
+ *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
+ *   Author:  Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,8 +33,8 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_IMXRT_IMXRT_SERIAL_H
-#define __ARCH_ARM_SRC_IMXRT_IMXRT_SERIAL_H
+#ifndef __ARCH_ARM_SRC_S32K1XX_S32K1XX_SERIAL_H
+#define __ARCH_ARM_SRC_S32K1XX_S32K1XX_SERIAL_H
 
 /****************************************************************************
  * Included Files
@@ -43,7 +43,7 @@
 #include <nuttx/config.h>
 
 #include "up_internal.h"
-#include "imxrt_config.h"
+#include "s32k1xx_config.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -77,7 +77,7 @@ extern "C"
  ****************************************************************************/
 
 /****************************************************************************
- * Name: imxrt_earlyserialinit
+ * Name: s32k1xx_earlyserialinit
  *
  * Description:
  *   Performs the low level UART initialization early in debug so that the
@@ -87,7 +87,7 @@ extern "C"
  ****************************************************************************/
 
 #ifdef USE_EARLYSERIALINIT
-void imxrt_earlyserialinit(void);
+void s32k1xx_earlyserialinit(void);
 #endif
 
 #undef EXTERN
@@ -96,4 +96,4 @@ void imxrt_earlyserialinit(void);
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif /* __ARCH_ARM_SRC_IMXRT_IMXRT_SERIAL_H */
+#endif /* __ARCH_ARM_SRC_S32K1XX_S32K1XX_SERIAL_H */
