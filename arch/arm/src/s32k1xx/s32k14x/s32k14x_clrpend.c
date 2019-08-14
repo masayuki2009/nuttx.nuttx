@@ -1,7 +1,7 @@
 /****************************************************************************
- * arch/arm/src/samd2l2/sam_irq.h
+ * arch/arm/src/s32k1xx/s32k14x/s32k14x_clrpend.c
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,31 +33,50 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_SAMD2L2_SAM_IRQ_H
-#define __ARCH_ARM_SRC_SAMD2L2_SAM_IRQ_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
+#include <arch/irq.h>
+
+#include "nvic.h"
+#include "up_arch.h"
+
+#include "s32k14x_irq.h"
+
 /****************************************************************************
- * Public Function Prototypes
+ * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: sam_dumpnvic
+ * Name: s32k14x_clrpend
  *
  * Description:
- *   Dump some interesting NVIC registers
+ *   Clear a pending interrupt at the NVIC.  This does not seem to be required
+ *   for most interrupts.  Don't know why... but the S32K14x Ethernet EMAC
+ *   interrupt definitely needs it!
+ *
+ *   This function is logically a part of s32k14x_irq.c, but I will keep it in
+ *   a separate file so that it will not increase the footprint on S32K14x
+ *   platforms that do not need this function.
  *
  ****************************************************************************/
 
-#ifdef CONFIG_DEBUG_IRQ_INFO
-void sam_dumpnvic(const char *msg, int irq);
-#else
-#  define sam_dumpnvic(msg, irq)
-#endif
+void s32k14x_clrpend(int irq)
+{
+  /* Check for external interrupt */
 
-#endif /* __ARCH_ARM_SRC_SAMD2L2_SAM_IRQ_H */
+  if (irq >= S32K1XX_IRQ_EXTINT)
+    {
+      if (irq < (S32K1XX_IRQ_EXTINT + 32))
+        {
+          putreg32(1 << (irq - S32K1XX_IRQ_EXTINT), NVIC_IRQ0_31_CLRPEND);
+        }
+      else if (irq < S32K1XX_IRQ_NIRQS)
+        {
+          putreg32(1 << (irq - S32K1XX_IRQ_EXTINT - 32), NVIC_IRQ32_63_CLRPEND);
+        }
+    }
+}
