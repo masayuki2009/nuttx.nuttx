@@ -1,7 +1,7 @@
 /****************************************************************************
- * mm/iob/iob_free_queue.c
+ * arch/arm/src/s32k1xx/s32k1xx_pindump.c
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,69 +39,90 @@
 
 #include <nuttx/config.h>
 
-#include <assert.h>
+#include <sys/types.h>
+#include <debug.h>
 
-#include <nuttx/mm/iob.h>
+#include <nuttx/irq.h>
+#include "up_arch.h"
 
-#include "iob.h"
+#include "hardware/s32k1xx_gpio.h"
+#include "hardware/s32k1xx_port.h"
+#include "s32k1xx_pin.h"
 
-#if CONFIG_IOB_NCHAINS > 0
+#ifdef CONFIG_DEBUG_GPIO_INFO
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Private Data
  ****************************************************************************/
 
-#ifndef NULL
-#  define NULL ((FAR void *)0)
+/* Port letters for prettier debug output */
+
+static const char g_portchar[S32K1XX_NPORTS] =
+{
+#if S32K1XX_NPORTS > 9
+#  error "Additional support required for this number of GPIOs"
+#elif S32K1XX_NPORTS > 8
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'
+#elif S32K1XX_NPORTS > 7
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'
+#elif S32K1XX_NPORTS > 6
+  'A', 'B', 'C', 'D', 'E', 'F', 'G'
+#elif S32K1XX_NPORTS > 5
+  'A', 'B', 'C', 'D', 'E', 'F'
+#elif S32K1XX_NPORTS > 4
+  'A', 'B', 'C', 'D', 'E'
+#elif S32K1XX_NPORTS > 3
+  'A', 'B', 'C', 'D'
+#elif S32K1XX_NPORTS > 2
+  'A', 'B', 'C'
+#elif S32K1XX_NPORTS > 1
+  'A', 'B'
+#elif S32K1XX_NPORTS > 0
+  'A'
+#else
+#  error "Bad number of GPIOs"
 #endif
+};
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: iob_free_queue
+ * Function:  s32k1xx_pindump
  *
  * Description:
- *   Free an entire queue of I/O buffer chains.
+ *   Dump all GPIO registers associated with the provided pin description
+ *   along with a descriptive messasge.
  *
  ****************************************************************************/
 
-void iob_free_queue(FAR struct iob_queue_s *qhead,
-                    enum iob_user_e producerid)
+void s32k1xx_pindump(uint32_t pinset, const char *msg)
 {
-  FAR struct iob_qentry_s *iobq;
-  FAR struct iob_qentry_s *nextq;
-  FAR struct iob_s *iob;
+  irqstate_t flags;
+  uintptr_t base;
+  int port;
 
-  /* Detach the list from the queue head so first for safety (should be safe
-   * anyway).
+  /* Decode the port and pin.  Use the port number to get the GPIO base
+   * address.
    */
 
-  iobq           = qhead->qh_head;
-  qhead->qh_head = NULL;
+  port = (pinset & _PIN_PORT_MASK) >> _PIN_PORT_SHIFT;
+  DEBUGASSERT((unsigned)port < S32K1XX_NPORTS);
+  base = S32K1XX_GPIO_BASE(port);
 
-  /* Remove each I/O buffer chain from the queue */
+  /* The following requires exclusive access to the GPIO registers */
 
-  while (iobq)
-    {
-      /* Remove the I/O buffer chain from the head of the queue and
-       * discard the queue container.
-       */
+  flags = enter_critical_section();
 
-      iob = iobq->qe_head;
-      DEBUGASSERT(iob);
+  gpioinfo("GPIO%c pinset: %08x base: %08x -- %s\n",
+           g_portchar[port], pinset, base, msg);
+  gpioinfo("  PDOR: %08x  PDIR: %08x  PDDR: %08x\n",
+           getreg32(base + S32K1XX_GPIO_PDOR_OFFSET),
+           getreg32(base + S32K1XX_GPIO_PDIR_OFFSET),
+           getreg32(base + S32K1XX_GPIO_PDDR_OFFSET));
 
-      /* Remove the queue container from the list and discard it */
-
-      nextq = iobq->qe_flink;
-      iob_free_qentry(iobq);
-      iobq = nextq;
-
-      /* Free the I/O chain */
-
-      iob_free_chain(iob, producerid);
-    }
+  leave_critical_section(flags);
 }
 
-#endif /* CONFIG_IOB_NCHAINS > 0 */
+#endif /* CONFIG_DEBUG_GPIO_INFO */
