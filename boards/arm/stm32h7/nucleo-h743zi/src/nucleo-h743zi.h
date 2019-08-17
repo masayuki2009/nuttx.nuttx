@@ -1,8 +1,9 @@
 /************************************************************************************
  * boards/nucleo-h743zi/src/nucleo-h743zi.h
  *
-#   Copyright (C) 2017 Gwenhael Goavec-Merou. All rights reserved.
-#   Author: Gwenhael Goavec-Merou<gwenhael.goavec-merou@trabucayre.com>
+#   Copyright (C) 2017, 2019 Gwenhael Goavec-Merou. All rights reserved.
+#   Authors: Gwenhael Goavec-Merou<gwenhael.goavec-merou@trabucayre.com>
+ *           David Sidrane <david.sidrane@nscdg.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,7 +60,9 @@
 #  endif
 #endif
 
+#define HAVE_RTC_DRIVER 1
 /* Configuration ********************************************************************/
+
 /* LED
  *
  * The Nucleo-144 board has numerous LEDs but only three, LD1 a Green LED, LD2 a
