@@ -1,8 +1,11 @@
 /****************************************************************************
- * arch/arm/src/stm32f0l0g0/stm32_pwr.c
+ * boards/arm/stm32f0l0g0/nucleo-g070rb/src/stm32_bringup.c
  *
  *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
  *   Author: Daniel Pereira Volpato <dpo@certi.org.br>
+ *
+ *   Based on: boards/arm/stm32f0l0g0/nucleo-g071rb/src/stm32_bringup.c
+ *   Author: Mateusz Szafoni <raiden00@railab.me>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,18 +41,76 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include "chip.h"
+
+#include <sys/types.h>
+#include <syslog.h>
+
+#include <nuttx/board.h>
+#include <nuttx/leds/userled.h>
+
+#include "nucleo-g070rb.h"
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#undef HAVE_LEDS
+#undef HAVE_DAC
+
+#if !defined(CONFIG_ARCH_LEDS) && defined(CONFIG_USERLED_LOWER)
+#  define HAVE_LEDS 1
+#endif
+
+/* TODO ??? */
+
+#if defined(CONFIG_DAC)
+#  define HAVE_DAC1 1
+#  define HAVE_DAC2 1
+#endif
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-/* This file is only a thin shell that includes the proper PWR implementation
- * according to the selected MCU family.
- */
+/****************************************************************************
+ * Name: stm32_bringup
+ *
+ * Description:
+ *   Perform architecture-specific initialization
+ *
+ *   CONFIG_BOARD_LATE_INITIALIZE=y :
+ *     Called from board_late_initialize().
+ *
+ *   CONFIG_BOARD_LATE_INITIALIZE=n && CONFIG_LIB_BOARDCTL=y && CONFIG_NSH_ARCHINIT:
+ *     Called from the NSH library
+ *
+ ****************************************************************************/
 
-#if defined(CONFIG_STM32F0L0G0_STM32G0)
-#  include "stm32g0_pwr.c"
-#else
-#  include "stm32f0l0_pwr.c"
+int stm32_bringup(void)
+{
+  int ret;
+
+#ifdef HAVE_LEDS
+  /* Register the LED driver */
+
+  ret = userled_lower_initialize(LED_DRIVER_PATH);
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: userled_lower_initialize() failed: %d\n", ret);
+      return ret;
+    }
 #endif
+
+#ifdef CONFIG_ADC
+  /* Initialize ADC and register the ADC driver. */
+
+  ret = stm32_adc_setup();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: stm32_adc_setup failed: %d\n", ret);
+    }
+#endif
+
+  UNUSED(ret);
+  return OK;
+}

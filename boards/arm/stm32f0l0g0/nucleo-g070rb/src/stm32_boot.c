@@ -1,8 +1,11 @@
 /****************************************************************************
- * arch/arm/src/stm32f0l0g0/stm32_pwr.c
+ * boards/arm/stm32f0l0g0/nucleo-g070rb/src/stm32_boot.c
  *
  *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
  *   Author: Daniel Pereira Volpato <dpo@certi.org.br>
+ *
+ *   Based on: boards/arm/stm32f0l0g0/nucleo-g071rb/src/stm32_boot.c
+ *   Author: Mateusz Szafoni <raiden00@railab.me>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,18 +41,63 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include "chip.h"
+
+#include <nuttx/board.h>
+#include <arch/board/board.h>
+
+#include "nucleo-g070rb.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-/* This file is only a thin shell that includes the proper PWR implementation
- * according to the selected MCU family.
- */
+/****************************************************************************
+ * Name: stm32_boardinitialize
+ *
+ * Description:
+ *   All STM32 architectures must provide the following entry point.  This
+ *   entry point is called early in the initialization -- after all memory
+ *   has been configured and mapped but before any devices have been
+ *   initialized.
+ *
+ ****************************************************************************/
 
-#if defined(CONFIG_STM32F0L0G0_STM32G0)
-#  include "stm32g0_pwr.c"
-#else
-#  include "stm32f0l0_pwr.c"
+void stm32_boardinitialize(void)
+{
+#ifdef CONFIG_ARCH_LEDS
+  /* Configure on-board LEDs if LED support has been selected. */
+
+  board_autoled_initialize();
+#endif
+
+#ifdef CONFIG_STM32F0L0G0_SPI
+  /* Configure SPI chip selects */
+
+  stm32_spidev_initialize();
+#endif
+}
+
+/****************************************************************************
+ * Name: board_late_initialize
+ *
+ * Description:
+ *   If CONFIG_BOARD_LATE_INITIALIZE is selected, then an additional
+ *   initialization call will be performed in the boot-up sequence to a
+ *   function called board_late_initialize().  board_late_initialize() will
+ *   be called immediately after up_initialize() is called and just before
+ *   the initial application is started.  This additional initialization
+ *   phase may be used, for example, to initialize board-specific device
+ *   drivers.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_BOARD_LATE_INITIALIZE
+void board_late_initialize(void)
+{
+#if defined(CONFIG_NSH_LIBRARY) && !defined(CONFIG_LIB_BOARDCTL)
+  /* Perform board bring-up here instead of from the board_app_initialize(). */
+
+  (void)stm32_bringup();
+#endif
+}
 #endif

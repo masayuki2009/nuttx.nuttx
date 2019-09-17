@@ -1,8 +1,11 @@
 /****************************************************************************
- * arch/arm/src/stm32f0l0g0/stm32_pwr.c
+ * boards/arm/stm32f0l0g0/nucleo-g070rb/src/stm32_appinit.c
  *
  *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
  *   Author: Daniel Pereira Volpato <dpo@certi.org.br>
+ *
+ *   Based on: boards/arm/stm32f0l0g0/nucleo-g071rb/src/stm32_appinit.c
+ *   Author: Mateusz Szafoni <raiden00@railab.me>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,18 +41,53 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include "chip.h"
+
+#include <sys/types.h>
+#include <syslog.h>
+
+#include <nuttx/board.h>
+#include <nuttx/leds/userled.h>
+
+#include "nucleo-g070rb.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-/* This file is only a thin shell that includes the proper PWR implementation
- * according to the selected MCU family.
- */
+/****************************************************************************
+ * Name: board_app_initialize
+ *
+ * Description:
+ *   Perform application specific initialization.  This function is never
+ *   called directly from application code, but only indirectly via the
+ *   (non-standard) boardctl() interface using the command BOARDIOC_INIT.
+ *
+ * Input Parameters:
+ *   arg - The boardctl() argument is passed to the board_app_initialize()
+ *         implementation without modification.  The argument has no
+ *         meaning to NuttX; the meaning of the argument is a contract
+ *         between the board-specific initialization logic and the
+ *         matching application logic.  The value cold be such things as a
+ *         mode enumeration value, a set of DIP switch switch settings, a
+ *         pointer to configuration data read from a file or serial FLASH,
+ *         or whatever you would like to do with it.  Every implementation
+ *         should accept zero/NULL as a default configuration.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success; a negated errno value is returned on
+ *   any failure to indicate the nature of the failure.
+ *
+ ****************************************************************************/
 
-#if defined(CONFIG_STM32F0L0G0_STM32G0)
-#  include "stm32g0_pwr.c"
+int board_app_initialize(uintptr_t arg)
+{
+#ifdef CONFIG_BOARD_LATE_INITIALIZE
+  /* Board initialization already performed by board_late_initialize() */
+
+  return OK;
 #else
-#  include "stm32f0l0_pwr.c"
+  /* Perform board-specific initialization */
+
+  return stm32_bringup();
 #endif
+}
