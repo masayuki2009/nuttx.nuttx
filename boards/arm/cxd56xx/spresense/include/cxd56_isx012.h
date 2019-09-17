@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/cxd56xx/cxd56_i2c.h
+ * boards/arm/cxd56xx/spresense/include/cxd56_isx012.h
  *
  *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
@@ -33,18 +33,26 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_CXD56XX_CXD56_I2C_H
-#define __ARCH_ARM_SRC_CXD56XX_CXD56_I2C_H
+#ifndef __BOARDS_ARM_CXD56XX_SPRESENSE_INCLUDE_CXD56_ISX012_H
+#define __BOARDS_ARM_CXD56XX_SPRESENSE_INCLUDE_CXD56_ISX012_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include <nuttx/i2c/i2c_master.h>
-#include "hardware/cxd56_i2c.h"
+
+/****************************************************************************
+ * Public Types
+ ****************************************************************************/
 
 #ifndef __ASSEMBLY__
+
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+#undef EXTERN
 #if defined(__cplusplus)
 #define EXTERN extern "C"
 extern "C"
@@ -58,40 +66,84 @@ extern "C"
  ****************************************************************************/
 
 /****************************************************************************
- * Name: cxd56_i2cbus_initialize
+ * Name: board_isx012_power_on
  *
  * Description:
- *   Initialize the selected I2C port. And return a unique instance of struct
- *   struct i2c_master_s.  This function may be called to obtain multiple
- *   instances of the interface, each of which may be set up with a
- *   different frequency and slave address.
- *
- * Input Parameter:
- *   Port number (for hardware that has multiple I2C interfaces)
- *
- * Returned Value:
- *   Valid I2C device structure reference on success; a NULL on failure
+ *   Power on ISX012
  *
  ****************************************************************************/
 
-FAR struct i2c_master_s *cxd56_i2cbus_initialize(int port);
+int board_isx012_power_on(void);
 
 /****************************************************************************
- * Name: cxd56_i2cbus_uninitialize
+ * Name: board_isx012_power_off
  *
  * Description:
- *   De-initialize the selected I2C port, and power down the device.
- *
- * Input Parameter:
- *   Device structure as returned by the cxd56_i2cbus_initialize()
- *
- * Returned Value:
- *   OK on success, ERROR when internal reference count mismatch or dev
- *   points to invalid hardware device.
+ *   Power off ISX012
  *
  ****************************************************************************/
 
-int cxd56_i2cbus_uninitialize(FAR struct i2c_master_s *dev);
+int board_isx012_power_off(void);
+
+/****************************************************************************
+ * Name: board_isx012_set_reset
+ *
+ * Description:
+ *   Set reset ISX012
+ *
+ ****************************************************************************/
+
+void board_isx012_set_reset(void);
+
+/****************************************************************************
+ * Name: board_isx012_release_reset
+ *
+ * Description:
+ *   Release reset ISX012
+ *
+ ****************************************************************************/
+
+void board_isx012_release_reset(void);
+
+/****************************************************************************
+ * Name: board_isx012_set_sleep
+ *
+ * Description:
+ *   Set sleep ISX012
+ *
+ ****************************************************************************/
+
+void board_isx012_set_sleep(int kind);
+
+/****************************************************************************
+ * Name: board_isx012_release_sleep
+ *
+ * Description:
+ *   Release sleep ISX012
+ *
+ ****************************************************************************/
+
+void board_isx012_release_sleep(void);
+
+/****************************************************************************
+ * Name: board_isx012_initialize
+ *
+ * Description:
+ *   Initialize ISX012 i2c driver and register the ISX012 device.
+ *
+ ****************************************************************************/
+
+int board_isx012_initialize(int i2c_bus_num);
+
+/****************************************************************************
+ * Name: board_isx012_uninitialize
+ *
+ * Description:
+ *   Uninitialize ISX012 i2c driver and register the ISX012 device.
+ *
+ ****************************************************************************/
+
+int board_isx012_uninitialize(void);
 
 #undef EXTERN
 #if defined(__cplusplus)
@@ -99,4 +151,4 @@ int cxd56_i2cbus_uninitialize(FAR struct i2c_master_s *dev);
 #endif
 
 #endif /* __ASSEMBLY__ */
-#endif /* __ARCH_ARM_SRC_CXD56XX_CXD56_I2C_H */
+#endif /* __BOARDS_ARM_CXD56XX_SPRESENSE_INCLUDE_CXD56_ISX012_H */
