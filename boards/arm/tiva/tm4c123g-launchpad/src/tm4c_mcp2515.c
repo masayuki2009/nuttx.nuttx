@@ -1,8 +1,9 @@
 /****************************************************************************
- * boards/arm/stm32/stm32f4discovery/src/stm32_mcp2515.c
+ * boards/arm/tiva/tm4c123g-launchpad/src/tiva_mcp2515.c
  *
  *   Copyright (C) 2017 Alan Carvalho de Assis. All rights reserved.
  *   Author: Alan Carvalho de Assis <acassis@gmail.com>
+ *   Modified: Ben <disruptivesolutionsnl@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,24 +46,24 @@
 #include <nuttx/spi/spi.h>
 #include <nuttx/can/mcp2515.h>
 
-#include "stm32.h"
-#include "stm32_spi.h"
-#include "stm32f103_minimum.h"
+#include "chip.h"
+#include "tiva_ssi.h"
+#include "tm4c123g-launchpad.h"
 
-#if defined(CONFIG_SPI) && defined(CONFIG_STM32_SPI1) && \
+#if defined(CONFIG_SPI) && defined(CONFIG_TIVA_SSI2) && \
     defined(CONFIG_CAN_MCP2515)
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define MCP2515_SPI_PORTNO 1   /* On SPI1 */
+#define MCP2515_SPI_PORTNO 2   /* On SPI2 */
 
 /****************************************************************************
  * Private Types
  ****************************************************************************/
 
-struct stm32_mcp2515config_s
+struct tiva_mcp2515config_s
 {
   /* Configuration structure as seen by the MCP2515 driver */
 
@@ -103,7 +104,7 @@ static int  mcp2515_attach(FAR struct mcp2515_config_s *state,
  * may modify frequency or X plate resistance values.
  */
 
-static struct stm32_mcp2515config_s g_mcp2515config =
+static struct tiva_mcp2515config_s g_mcp2515config =
 {
   .config =
   {
@@ -128,8 +129,8 @@ static struct stm32_mcp2515config_s g_mcp2515config =
 
 int mcp2515_interrupt(int irq, FAR void *context, FAR void *arg)
 {
-  FAR struct stm32_mcp2515config_s *priv =
-             (FAR struct stm32_mcp2515config_s *)arg;
+  FAR struct tiva_mcp2515config_s *priv =
+             (FAR struct tiva_mcp2515config_s *)arg;
 
   DEBUGASSERT(priv != NULL);
 
@@ -148,8 +149,8 @@ int mcp2515_interrupt(int irq, FAR void *context, FAR void *arg)
 static int mcp2515_attach(FAR struct mcp2515_config_s *state,
                           mcp2515_handler_t handler, FAR void *arg)
 {
-  FAR struct stm32_mcp2515config_s *priv =
-             (FAR struct stm32_mcp2515config_s *)state;
+  FAR struct tiva_mcp2515config_s *priv =
+             (FAR struct tiva_mcp2515config_s *)state;
   irqstate_t flags;
 
   caninfo("Saving handler %p\n", handler);
@@ -159,10 +160,9 @@ static int mcp2515_attach(FAR struct mcp2515_config_s *state,
   priv->handler = handler;
   priv->arg = arg;
 
-  /* Configure the interrupt for falling edge*/
+  /* Configure the interrupt for falling edge */
 
-  (void)stm32_gpiosetevent(GPIO_MCP2515_IRQ, false, true, false,
-                           mcp2515_interrupt, priv);
+  (void)tiva_configgpio(GPIO_MCP2515_IRQ);
 
   leave_critical_section(flags);
 
@@ -174,7 +174,7 @@ static int mcp2515_attach(FAR struct mcp2515_config_s *state,
  ****************************************************************************/
 
 /****************************************************************************
- * Name: stm32_mcp2515initialize
+ * Name: tiva_mcp2515initialize
  *
  * Description:
  *   Initialize and register the MCP2515 RFID driver.
@@ -187,7 +187,7 @@ static int mcp2515_attach(FAR struct mcp2515_config_s *state,
  *
  ****************************************************************************/
 
-int stm32_mcp2515initialize(FAR const char *devpath)
+int tiva_mcp2515initialize(FAR const char *devpath)
 {
   FAR struct spi_dev_s     *spi;
   FAR struct can_dev_s     *can;
@@ -202,9 +202,9 @@ int stm32_mcp2515initialize(FAR const char *devpath)
 
       /* Configure the MCP2515 interrupt pin as an input */
 
-      (void)stm32_configgpio(GPIO_MCP2515_IRQ);
+      (void)tiva_configgpio(GPIO_MCP2515_IRQ);
 
-      spi = stm32_spibus_initialize(MCP2515_SPI_PORTNO);
+      spi = tiva_ssibus_initialize(MCP2515_SPI_PORTNO);
 
       if (!spi)
         {
