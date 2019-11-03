@@ -39,6 +39,10 @@
 
 #include <nuttx/config.h>
 
+#include <inttypes.h>
+#include <stdio.h>
+#include <fcntl.h>
+
 #include <nuttx/arch.h>
 #include <nuttx/kmalloc.h>
 #include <nuttx/kthread.h>
@@ -47,8 +51,9 @@
 #include <nuttx/signal.h>
 #include <metal/utilities.h>
 
-#include <stdio.h>
-#include <fcntl.h>
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
 
 #ifndef MAX
 #  define MAX(a,b)              ((a) > (b) ? (a) : (b))
@@ -92,8 +97,8 @@ struct rptun_cb_s
 
 struct rptun_store_s
 {
-  int  fd;
-  FAR char *buf;
+  struct file file;
+  FAR char   *buf;
 };
 
 /****************************************************************************
@@ -176,7 +181,7 @@ static int rptun_thread(int argc, FAR char *argv[])
   sigset_t set;
   int ret;
 
-  priv = (FAR struct rptun_priv_s *)atoi(argv[1]);
+  priv = (FAR struct rptun_priv_s *)((uintptr_t)strtoul(argv[1], NULL, 0));
 
   sigemptyset(&set);
   sigaddset(&set, SIGUSR1);
@@ -574,23 +579,24 @@ static int rptun_store_open(FAR void *store_, FAR const char *path,
 {
   FAR struct rptun_store_s *store = store_;
   int len = 0x100;
+  int ret;
 
-  store->fd = open(path, O_RDONLY);
-  if (store->fd < 0)
+  ret = file_open(&store->file, path, O_RDONLY);
+  if (ret < 0)
     {
-      return -EINVAL;
+      return ret;
     }
 
   store->buf = kmm_malloc(len);
   if (!store->buf)
     {
-      close(store->fd);
+      file_close(&store->file);
       return -ENOMEM;
     }
 
   *img_data = store->buf;
 
-  return read(store->fd, store->buf, len);
+  return file_read(&store->file, store->buf, len);
 }
 
 static void rptun_store_close(FAR void *store_)
@@ -598,7 +604,7 @@ static void rptun_store_close(FAR void *store_)
   FAR struct rptun_store_s *store = store_;
 
   kmm_free(store->buf);
-  close(store->fd);
+  file_close(&store->file);
 }
 
 static int rptun_store_load(FAR void *store_, size_t offset,
@@ -630,8 +636,8 @@ static int rptun_store_load(FAR void *store_, size_t offset,
         }
     }
 
-  lseek(store->fd, offset, SEEK_SET);
-  return read(store->fd, tmp, size);
+  file_seek(&store->file, offset, SEEK_SET);
+  return file_read(&store->file, tmp, size);
 }
 
 static metal_phys_addr_t rptun_pa_to_da(FAR struct rptun_dev_s *dev,
@@ -785,7 +791,7 @@ int rptun_initialize(FAR struct rptun_dev_s *dev)
 {
   struct metal_init_params params = METAL_INIT_DEFAULTS;
   FAR struct rptun_priv_s *priv;
-  char str[16];
+  char arg1[16];
   char name[16];
   FAR char *argv[2];
   int ret;
@@ -802,10 +808,10 @@ int rptun_initialize(FAR struct rptun_dev_s *dev)
       return -ENOMEM;
     }
 
-  sprintf(name, "rptun%s", RPTUN_GET_CPUNAME(dev));
+  snprintf(name, 16, "rptun%s", RPTUN_GET_CPUNAME(dev));
+  snprintf(arg1, 16, "0x%" PRIxPTR, (uintptr_t)priv);
 
-  itoa((int)priv, str, 10);
-  argv[0] = str;
+  argv[0] = arg1;
   argv[1] = NULL;
   ret = kthread_create(name,
                        CONFIG_RPTUN_PRIORITY,
@@ -837,7 +843,7 @@ int rptun_initialize(FAR struct rptun_dev_s *dev)
 
 int rptun_boot(FAR const char *cpuname)
 {
-  struct file filep;
+  struct file file;
   char name[16];
   int ret;
 
@@ -848,14 +854,14 @@ int rptun_boot(FAR const char *cpuname)
 
   sprintf(name, "/dev/rptun%s", cpuname);
 
-  ret = file_open(&filep, name, 0, 0);
+  ret = file_open(&file, name, 0, 0);
   if (ret)
     {
       return ret;
     }
 
-  ret = file_ioctl(&filep, RPTUNIOC_START, 0);
-  file_close(&filep);
+  ret = file_ioctl(&file, RPTUNIOC_START, 0);
+  file_close(&file);
 
   return ret;
 }
