@@ -1,8 +1,7 @@
 ############################################################################
-# boards/arm/stm32h7/nucleo-h743zi/src/Makefile
+# drivers/wireless/ieee80211/bcm43xxx/Make.defs
 #
-#   Copyright (C) 2018 Gregory Nutt. All rights reserved.
-#   Author: Gregory Nutt <gnutt@nuttx.org>
+#   Copyright (C) 2017 Gregory Nutt. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,67 +32,34 @@
 #
 ############################################################################
 
--include $(TOPDIR)/Make.defs
+# Include BCM43xxx drivers into the build
 
-ASRCS =
-CSRCS = stm32_boot.c stm32_bringup.c
+ifeq ($(CONFIG_IEEE80211_BROADCOM_FULLMAC),y)
+  CSRCS += bcmf_driver.c
+  CSRCS += bcmf_cdc.c
+  CSRCS += bcmf_bdc.c
+  CSRCS += bcmf_utils.c
+  CSRCS += bcmf_netdev.c
 
-ifeq ($(CONFIG_ADC),y)
-CSRCS += stm32_adc.c
+ifeq ($(CONFIG_IEEE80211_BROADCOM_FULLMAC_SDIO),y)
+  CSRCS += mmc_sdio.c
+  CSRCS += bcmf_sdio.c
+  CSRCS += bcmf_core.c
+  CSRCS += bcmf_sdpcm.c
 endif
 
-ifeq ($(CONFIG_ARCH_LEDS),y)
-CSRCS += stm32_autoleds.c
-else
-CSRCS += stm32_userleds.c
+ifeq ($(CONFIG_IEEE80211_BROADCOM_BCM43362),y)
+CSRCS += bcmf_chip_43362.c
 endif
 
-ifeq ($(CONFIG_ARCH_BUTTONS),y)
-CSRCS += stm32_buttons.c
+ifeq ($(CONFIG_IEEE80211_BROADCOM_BCM43438),y)
+CSRCS += bcmf_chip_43438.c
 endif
 
-ifeq ($(CONFIG_STM32H7_SPI),y)
-CSRCS += stm32_spi.c
-endif
+# Include BCM43xxx build support
 
-ifeq ($(CONFIG_STM32H7_OTGFS),y)
-CSRCS += stm32_usb.c
-endif
+DEPPATH += --dep-path wireless$(DELIM)ieee80211$(DELIM)bcm43xxx
+VPATH += :wireless$(DELIM)ieee80211$(DELIM)bcm43xxx
+CFLAGS += ${shell $(INCDIR) $(INCDIROPT) "$(CC)" $(TOPDIR)$(DELIM)drivers$(DELIM)wireless$(DELIM)ieee80211$(DELIM)bcm43xxx}
 
-ifeq ($(CONFIG_BOARDCTL_UNIQUEID),y)
-CSRCS += stm32_uid.c
-endif
-
-ifeq ($(CONFIG_SENSORS_LSM6DSL),y)
-CSRCS += stm32_lsm6dsl.c
-endif
-
-ifeq ($(CONFIG_SENSORS_LSM9DS1),y)
-CSRCS += stm32_lsm9ds1.c
-endif
-
-ifeq ($(CONFIG_SENSORS_LSM303AGR),y)
-CSRCS += stm32_lsm303agr.c
-endif
-
-ifeq ($(CONFIG_PCA9635PW),y)
-CSRCS += stm32_pca9635.c
-endif
-
-ifeq ($(CONFIG_LCD_SSD1306),y)
-CSRCS += stm32_ssd1306.c
-endif
-
-ifeq ($(CONFIG_LIB_BOARDCTL),y)
-CSRCS += stm32_appinitialize.c
-endif
-
-ifeq ($(CONFIG_WL_NRF24L01),y)
-CSRCS += stm32_nrf24l01.c
-endif
-
-ifeq ($(CONFIG_DEV_GPIO),y)
-CSRCS += stm32_gpio.c
-endif
-
-include $(TOPDIR)/boards/Board.mk
+endif # CONFIG_IEEE80211_BROADCOM_FULLMAC
