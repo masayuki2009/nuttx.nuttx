@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/imxrt/imxrt1050-evk/src/imxrt_ethernet.c
+ * boards/arm/imxrt/imxrt1020-evk/src/imxrt_ethernet.c
  *
  *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -57,11 +57,9 @@
 #include <nuttx/arch.h>
 
 #include "imxrt_gpio.h"
-#include "imxrt_enet.h"
-
-#include "imxrt1050-evk.h"
 
 #include <arch/board/board.h>
+#include "imxrt1020-evk.h"
 
 #ifdef CONFIG_IMXRT_ENET
 
@@ -71,9 +69,8 @@
 
 #define IMXRT_ENET_DEVNAME "eth0"
 
-/* Debug ********************************************************************/
-
-/* Extra, in-depth debug output that is only available if
+/* Debug
+ * Extra, in-depth debug output that is only available if
  * CONFIG_NETDEV_PHY_DEBUG us defined.
  */
 
@@ -95,7 +92,7 @@
  * Name: imxrt_enet_phy_enable
  ****************************************************************************/
 
-#ifdef CONFIG_IMXRT_GPIO1_0_15_IRQ
+#ifdef GPIO_ENET_IRQ
 static void imxrt_enet_phy_enable(bool enable)
 {
   phyinfo("IRQ%d: enable=%d\n", GPIO_ENET_INT, enable);
@@ -111,33 +108,32 @@ static void imxrt_enet_phy_enable(bool enable)
 }
 #endif
 
-/****************************************************************************
+/*****************************************************************************
  * Public Functions
- ****************************************************************************/
+ *****************************************************************************/
 
-/****************************************************************************
+/*****************************************************************************
  * Function: imxrt_phy_boardinitialize
  *
  * Description:
- *  Some boards require specialized initialization of the PHY before it can
- *  be used.
- *  This may include such things as configuring GPIOs, resetting the PHY, etc.
- *  If CONFIG_IMXRT_ENET_PHYINIT is defined in the configuration then the
- *  board specific logic must provide imxrt_phyinitialize();
- *  The i.MX RT Ethernet driver will call this function one time before it
- *  first uses the PHY.
+ *   Some boards require specialized initialization of the PHY before it can
+ *   be used.  This may include such things as configuring GPIOs, resetting
+ *   the PHY, etc.  If CONFIG_IMXRT_ENET_PHYINIT is defined in the
+ *   configuration then the board specific logic must provide
+ *   imxrt_phyinitialize();  The i.MX RT Ethernet driver will call this
+ *   function one time before it first uses the PHY.
  *
  * Input Parameters:
- *  intf - Always zero for now.
+ *   intf - Always zero for now.
  *
  * Returned Value:
- *  OK on success; Negated errno on failure.
+ *   OK on success; Negated errno on failure.
  *
- ****************************************************************************/
+ *****************************************************************************/
 
 int imxrt_phy_boardinitialize(int intf)
 {
-#ifdef CONFIG_IMXRT_GPIO1_0_15_IRQ
+#ifdef GPIO_ENET_IRQ
   /* Configure the PHY interrupt pin */
 
   phyinfo("Configuring interrupt: %08x\n", GPIO_ENET_INT);
@@ -149,18 +145,15 @@ int imxrt_phy_boardinitialize(int intf)
    * The #RST uses inverted logic.  The initial value of zero will put the
    * PHY into the reset state.
    */
-#ifdef GPIO_ENET_RST
-  /* On the EVK the RST pin is combined with LED, so sometimes can't be
-   * accessed. Only stress about it if we've got a definition.
-   */
 
   phyinfo("Configuring reset: %08x\n", GPIO_ENET_RST);
+
   imxrt_config_gpio(GPIO_ENET_RST);
 
   /* Take the PHY out of reset. */
 
   imxrt_gpio_write(GPIO_ENET_RST, true);
-#endif
+
   return OK;
 }
 
@@ -226,7 +219,7 @@ int imxrt_phy_boardinitialize(int intf)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_IMXRT_GPIO1_0_15_IRQ
+#ifdef GPIO_ENET_IRQ
 int arch_phy_irq(FAR const char *intf, xcpt_t handler, void *arg,
                  phy_enable_t *enable)
 {
@@ -292,6 +285,6 @@ int arch_phy_irq(FAR const char *intf, xcpt_t handler, void *arg,
   spin_unlock_irqrestore(flags);
   return OK;
 }
-#endif /* CONFIG_IMXRT_GPIO1_0_15_IRQ */
+#endif /* GPIO_ENET_IRQ */
 
 #endif /* CONFIG_IMXRT_ENET */

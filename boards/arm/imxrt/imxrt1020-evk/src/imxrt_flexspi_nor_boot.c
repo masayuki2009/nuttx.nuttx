@@ -1,8 +1,8 @@
 /****************************************************************************
- * boards/arm/imxrt/imxrt1050-evk/src/imxrt_userleds.c
+ * boards/arm/imxrt/imxrt1020-evk/src/imxrt_flexspi_nor_boot.c
  *
  *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *   Author: Ivan Ucherdzhiev <ivanucherdjiev@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,67 +33,34 @@
  *
  ****************************************************************************/
 
-/* There are four LED status indicators located on the EVK Board.  The
- * functions of these LEDs include:
- *
- *   - Main Power Supply(D3)
- *     Green: DC 5V main supply is normal.
- *     Red:   J2 input voltage is over 5.6V.
- *     Off:   The board is not powered.
- *   - Reset RED LED(D15)
- *   - OpenSDA LED(D16)
- *   - USER LED(D18)
- *
- * Only a single LED, D18, is under software control.
- */
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-
-#include "imxrt_gpio.h"
-#include "imxrt_iomuxc.h"
-#include "imxrt1050-evk.h"
-
-#include <arch/board/board.h>
-
-#if !defined(CONFIG_ARCH_LEDS) && defined(GPIO_LED)
+#include "imxrt_flexspi_nor_boot.h"
 
 /****************************************************************************
- * Public Functions
+ * Public Data
  ****************************************************************************/
 
-/****************************************************************************
- * Name: board_userled_initialize
- ****************************************************************************/
-
-void board_userled_initialize(void)
+__attribute__((section(".boot_hdr.ivt")))
+const struct ivt_s g_image_vector_table =
 {
-  /* Configure LED GPIO for output */
+  IVT_HEADER,                         /* IVT Header */
+  0x60002000,                         /* Image  Entry Function */
+  IVT_RSVD,                           /* Reserved = 0 */
+  (uint32_t)DCD_ADDRESS,              /* Address where DCD information is stored */
+  (uint32_t)BOOT_DATA_ADDRESS,        /* Address where BOOT Data Structure is stored */
+  (uint32_t)&g_image_vector_table,    /* Pointer to IVT Self (absolute address) */
+  (uint32_t)CSF_ADDRESS,              /* Address where CSF file is stored */
+  IVT_RSVD                            /* Reserved = 0 */
+};
 
-  imxrt_config_gpio(GPIO_LED);
-}
-
-/****************************************************************************
- * Name: board_userled
- ****************************************************************************/
-
-void board_userled(int led, bool ledon)
+__attribute__((section(".boot_hdr.boot_data")))
+const struct boot_data_s g_boot_data =
 {
-  imxrt_gpio_write(GPIO_LED, !ledon);  /* Low illuminates */
-}
-
-/****************************************************************************
- * Name: board_userled_all
- ****************************************************************************/
-
-void board_userled_all(uint8_t ledset)
-{
-  /* Low illuminates */
-
-  imxrt_gpio_write(GPIO_LED, (ledset & BOARD_USERLED_BIT) == 0);
-}
-
-#endif /* !CONFIG_ARCH_LEDS */
+  FLASH_BASE,                         /* boot start location */
+  (FLASH_END - FLASH_BASE),           /* size */
+  PLUGIN_FLAG,                        /* Plugin flag */
+  0xffffffff                          /* empty - extra data word */
+};

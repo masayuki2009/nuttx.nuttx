@@ -1,8 +1,9 @@
 /****************************************************************************
- * boards/arm/imxrt/imxrt1050-evk/src/imxrt_userleds.c
+ * boards/arm/imxrt/src/imxrt1020-evk.h
  *
  *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
+ *           Dave Marples <dave@marples.net>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,19 +34,8 @@
  *
  ****************************************************************************/
 
-/* There are four LED status indicators located on the EVK Board.  The
- * functions of these LEDs include:
- *
- *   - Main Power Supply(D3)
- *     Green: DC 5V main supply is normal.
- *     Red:   J2 input voltage is over 5.6V.
- *     Off:   The board is not powered.
- *   - Reset RED LED(D15)
- *   - OpenSDA LED(D16)
- *   - USER LED(D18)
- *
- * Only a single LED, D18, is under software control.
- */
+#ifndef __CONFIGS_IMXRT1020_EVK_SRC_IMXRT1020_H
+#define __CONFIGS_IMXRT1020_EVK_SRC_IMXRT1020_H
 
 /****************************************************************************
  * Included Files
@@ -53,47 +43,97 @@
 
 #include <nuttx/config.h>
 
+#include <stdint.h>
+#include <stdbool.h>
+
+#include <arch/irq.h>
+#include <nuttx/irq.h>
+
 #include "imxrt_gpio.h"
 #include "imxrt_iomuxc.h"
-#include "imxrt1050-evk.h"
 
-#include <arch/board/board.h>
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
 
-#if !defined(CONFIG_ARCH_LEDS) && defined(GPIO_LED)
+/****************************************************************************
+ * Public Types
+ ****************************************************************************/
+
+/****************************************************************************
+ * Public data
+ ****************************************************************************/
+
+#ifndef __ASSEMBLY__
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: board_userled_initialize
+ * Name: imxrt_bringup
+ *
+ * Description:
+ *   Bring up board features
+ *
  ****************************************************************************/
 
-void board_userled_initialize(void)
-{
-  /* Configure LED GPIO for output */
-
-  imxrt_config_gpio(GPIO_LED);
-}
+#if defined(CONFIG_LIB_BOARDCTL) || defined(CONFIG_BOARD_LATE_INITIALIZE)
+int imxrt_bringup(void);
+#endif
 
 /****************************************************************************
- * Name: board_userled
+ * Name: imxrt_spidev_initialize
+ *
+ * Description:
+ *   Called to configure SPI chip select GPIO pins for the versiboard2
+ *
  ****************************************************************************/
 
-void board_userled(int led, bool ledon)
-{
-  imxrt_gpio_write(GPIO_LED, !ledon);  /* Low illuminates */
-}
+void imxrt_spidev_initialize(void);
+
+/*****************************************************************************
+ * Name: imxrt_mmcsd_spi_initialize
+ *
+ * Description:
+ *   Initialize SPI-based SD card and card detect thread.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_MMCSD_SPI
+int imxrt_mmcsd_spi_initialize(int minor);
+#endif
 
 /****************************************************************************
- * Name: board_userled_all
+ * Name: imxrt_autoled_initialize
+ *
+ * Description:
+ *   Initialize NuttX-controlled LED logic
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   None
+ *
  ****************************************************************************/
 
-void board_userled_all(uint8_t ledset)
-{
-  /* Low illuminates */
+#ifdef CONFIG_ARCH_LEDS
+void imxrt_autoled_initialize(void);
+#endif
 
-  imxrt_gpio_write(GPIO_LED, (ledset & BOARD_USERLED_BIT) == 0);
-}
+#ifdef CONFIG_DEV_GPIO
 
-#endif /* !CONFIG_ARCH_LEDS */
+/****************************************************************************
+ * Name: imxrt_gpio_initialize
+ *
+ * Description:
+ *   Initialize GPIO drivers for use with /apps/examples/gpio
+ *
+ ****************************************************************************/
+
+int imxrt_gpio_initialize(void);
+#endif
+
+#endif /* __ASSEMBLY__ */
+#endif /* __CONFIGS_IMXRT1020_EVK_SRC_IMXRT1020_H */

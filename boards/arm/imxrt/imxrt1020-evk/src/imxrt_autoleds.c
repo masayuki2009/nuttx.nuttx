@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/imxrt/imxrt1050-evk/src/imxrt_userleds.c
+ * boards/arm/imxrt/imxrt1020-evk/src/imxrt_autoleds.c
  *
  *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,18 +33,22 @@
  *
  ****************************************************************************/
 
-/* There are four LED status indicators located on the EVK Board.  The
- * functions of these LEDs include:
+/* There is one user accessible LED status indicator located on the 1020-EVK.
+ * The function of the LEDs include:
  *
- *   - Main Power Supply(D3)
- *     Green: DC 5V main supply is normal.
- *     Red:   J2 input voltage is over 5.6V.
- *     Off:   The board is not powered.
- *   - Reset RED LED(D15)
- *   - OpenSDA LED(D16)
- *   - USER LED(D18)
+ * D3: Power (Green) & Overpower (Red)
+ * D5: User LED (Green) GPIO_AD_B0_05
+ * D15: RST LED (Red)
  *
- * Only a single LED, D18, is under software control.
+ * This LED is not used by the board port unless CONFIG_ARCH_LEDS is
+ * defined.  In that case, the usage by the board port is defined in
+ * include/board.h and src/imxrt_autoleds.c. The LED is used to encode
+ * OS-related events as documented in board.h
+ *
+ * The intention is that if the LED is statically on, NuttX has successfully
+ * booted and is, apparently, running normally.  If the LED is flashing at
+ * approximately 2Hz, then a fatal error has been detected and the system has
+ * halted.
  */
 
 /****************************************************************************
@@ -53,47 +57,105 @@
 
 #include <nuttx/config.h>
 
+#include <nuttx/board.h>
+
 #include "imxrt_gpio.h"
 #include "imxrt_iomuxc.h"
-#include "imxrt1050-evk.h"
 
 #include <arch/board/board.h>
 
-#if !defined(CONFIG_ARCH_LEDS) && defined(GPIO_LED)
+#ifdef CONFIG_ARCH_LEDS
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: board_userled_initialize
+ * Name: imxrt_autoled_initialize
+ *
+ * Description:
+ *   Initialize NuttX-controlled LED logic
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   None
+ *
  ****************************************************************************/
 
-void board_userled_initialize(void)
+void imxrt_autoled_initialize(void)
 {
   /* Configure LED GPIO for output */
 
-  imxrt_config_gpio(GPIO_LED);
+  imxrt_config_gpio(GPIO_LED1);
 }
 
 /****************************************************************************
- * Name: board_userled
+ * Name: board_autoled_on
+ *
+ * Description:
+ *   Turn on the "logical" LED state
+ *
+ * Input Parameters:
+ *   led - Identifies the "logical" LED state (see definitions in
+ *         include/board.h)
+ *
+ * Returned Value:
+ *   None
+ *
  ****************************************************************************/
 
-void board_userled(int led, bool ledon)
+void board_autoled_on(int led)
 {
-  imxrt_gpio_write(GPIO_LED, !ledon);  /* Low illuminates */
+  bool ledoff = false;
+
+  switch (led)
+    {
+      case 0:  /* LED Off */
+        ledoff = true;
+        break;
+
+      case 2:  /* LED No change */
+        return;
+
+      case 1:  /* LED On */
+      case 3:  /* LED On */
+        break;
+    }
+
+  imxrt_gpio_write(GPIO_LED1, ledoff); /* Low illuminates */
 }
 
 /****************************************************************************
- * Name: board_userled_all
+ * Name: board_autoled_off
+ *
+ * Description:
+ *   Turn off the "logical" LED state
+ *
+ * Input Parameters:
+ *   led - Identifies the "logical" LED state (see definitions in
+ *         include/board.h)
+ *
+ * Returned Value:
+ *   None
+ *
  ****************************************************************************/
 
-void board_userled_all(uint8_t ledset)
+void board_autoled_off(int led)
 {
-  /* Low illuminates */
+  switch (led)
+    {
+      case 0:  /* LED Off */
+      case 1:  /* LED Off */
+      case 3:  /* LED Off */
+        break;
 
-  imxrt_gpio_write(GPIO_LED, (ledset & BOARD_USERLED_BIT) == 0);
+      case 2:  /* LED No change */
+        return;
+    }
+
+  imxrt_gpio_write(GPIO_LED1, true); /* Low illuminates */
 }
 
-#endif /* !CONFIG_ARCH_LEDS */
+#endif /* CONFIG_ARCH_LEDS */

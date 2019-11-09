@@ -1,7 +1,7 @@
 /****************************************************************************
- * boards/arm/imxrt/imxrt1050-evk/src/imxrt_userleds.c
+ * boards/arm/imxrt/imxrt1020-evk/src/imxrt_boot.c
  *
- *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2015 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,67 +33,60 @@
  *
  ****************************************************************************/
 
-/* There are four LED status indicators located on the EVK Board.  The
- * functions of these LEDs include:
- *
- *   - Main Power Supply(D3)
- *     Green: DC 5V main supply is normal.
- *     Red:   J2 input voltage is over 5.6V.
- *     Off:   The board is not powered.
- *   - Reset RED LED(D15)
- *   - OpenSDA LED(D16)
- *   - USER LED(D18)
- *
- * Only a single LED, D18, is under software control.
- */
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
-#include "imxrt_gpio.h"
-#include "imxrt_iomuxc.h"
-#include "imxrt1050-evk.h"
-
+#include <nuttx/board.h>
 #include <arch/board/board.h>
 
-#if !defined(CONFIG_ARCH_LEDS) && defined(GPIO_LED)
+#include "imxrt_start.h"
+#include "imxrt1020-evk.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: board_userled_initialize
+ * Name: imxrt_boardinitialize
+ *
+ * Description:
+ *   All i.MX RT architectures must provide the following entry point.  This
+ *   entry point is called early in the initialization -- after clocking and
+ *   memory have been configured but before caches have been enabled and
+ *   before any devices have been initialized.
+ *
  ****************************************************************************/
 
-void board_userled_initialize(void)
+void imxrt_boardinitialize(void)
 {
-  /* Configure LED GPIO for output */
+  /* Configure on-board LEDs if LED support has been selected. */
 
-  imxrt_config_gpio(GPIO_LED);
+#ifdef CONFIG_ARCH_LEDS
+  imxrt_autoled_initialize();
+#endif
 }
 
 /****************************************************************************
- * Name: board_userled
+ * Name: board_late_initialize
+ *
+ * Description:
+ *   If CONFIG_BOARD_LATE_INITIALIZE is selected, then an additional
+ *   initialization call will be performed in the boot-up sequence to a
+ *   function called board_late_initialize().  board_late_initialize() will be
+ *   called immediately after up_intitialize() is called and just before the
+ *   initial application is started.  This additional initialization phase
+ *   may be used, for example, to initialize board-specific device drivers.
+ *
  ****************************************************************************/
 
-void board_userled(int led, bool ledon)
+#ifdef CONFIG_BOARD_LATE_INITIALIZE
+void board_late_initialize(void)
 {
-  imxrt_gpio_write(GPIO_LED, !ledon);  /* Low illuminates */
+  /* Perform board initialization */
+
+  (void)imxrt_bringup();
 }
-
-/****************************************************************************
- * Name: board_userled_all
- ****************************************************************************/
-
-void board_userled_all(uint8_t ledset)
-{
-  /* Low illuminates */
-
-  imxrt_gpio_write(GPIO_LED, (ledset & BOARD_USERLED_BIT) == 0);
-}
-
-#endif /* !CONFIG_ARCH_LEDS */
+#endif /* CONFIG_BOARD_LATE_INITIALIZE */

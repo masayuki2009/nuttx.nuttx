@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/imxrt/imxrt1050-evk/src/imxrt_userleds.c
+ * boards/arm/imxrt/imxrt1020-evk/src/imxrt_appinit.c
  *
  *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,67 +33,58 @@
  *
  ****************************************************************************/
 
-/* There are four LED status indicators located on the EVK Board.  The
- * functions of these LEDs include:
- *
- *   - Main Power Supply(D3)
- *     Green: DC 5V main supply is normal.
- *     Red:   J2 input voltage is over 5.6V.
- *     Off:   The board is not powered.
- *   - Reset RED LED(D15)
- *   - OpenSDA LED(D16)
- *   - USER LED(D18)
- *
- * Only a single LED, D18, is under software control.
- */
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
-#include "imxrt_gpio.h"
-#include "imxrt_iomuxc.h"
-#include "imxrt1050-evk.h"
+#include <sys/types.h>
 
-#include <arch/board/board.h>
+#include <nuttx/board.h>
 
-#if !defined(CONFIG_ARCH_LEDS) && defined(GPIO_LED)
+#include "imxrt1020-evk.h"
+
+#ifdef CONFIG_LIB_BOARDCTL
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: board_userled_initialize
+ * Name: board_app_initialize
+ *
+ * Description:
+ *   Perform application specific initialization.  This function is never
+ *   called directly from application code, but only indirectly via the
+ *   (non-standard) boardctl() interface using the command BOARDIOC_INIT.
+ *
+ * Input Parameters:
+ *   arg - The boardctl() argument is passed to the board_app_initialize()
+ *         implementation without modification.  The argument has no
+ *         meaning to NuttX; the meaning of the argument is a contract
+ *         between the board-specific initalization logic and the
+ *         matching application logic.  The value cold be such things as a
+ *         mode enumeration value, a set of DIP switch switch settings, a
+ *         pointer to configuration data read from a file or serial FLASH,
+ *         or whatever you would like to do with it.  Every implementation
+ *         should accept zero/NULL as a default configuration.
+ *
+ * Returned Value:
+ *   Zero (OK) is returned on success; a negated errno value is returned on
+ *   any failure to indicate the nature of the failure.
+ *
  ****************************************************************************/
 
-void board_userled_initialize(void)
+int board_app_initialize(uintptr_t arg)
 {
-  /* Configure LED GPIO for output */
+#ifndef CONFIG_BOARD_LATE_INITIALIZE
+  /* Perform board initialization */
 
-  imxrt_config_gpio(GPIO_LED);
+  return imxrt_bringup();
+#else
+  return OK;
+#endif
 }
 
-/****************************************************************************
- * Name: board_userled
- ****************************************************************************/
-
-void board_userled(int led, bool ledon)
-{
-  imxrt_gpio_write(GPIO_LED, !ledon);  /* Low illuminates */
-}
-
-/****************************************************************************
- * Name: board_userled_all
- ****************************************************************************/
-
-void board_userled_all(uint8_t ledset)
-{
-  /* Low illuminates */
-
-  imxrt_gpio_write(GPIO_LED, (ledset & BOARD_USERLED_BIT) == 0);
-}
-
-#endif /* !CONFIG_ARCH_LEDS */
+#endif /* CONFIG_LIB_BOARDCTL */
