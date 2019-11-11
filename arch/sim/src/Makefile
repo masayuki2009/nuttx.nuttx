@@ -61,7 +61,7 @@ CSRCS  = up_initialize.c up_idle.c up_interruptcontext.c up_initialstate.c
 CSRCS += up_createstack.c up_usestack.c up_releasestack.c up_stackframe.c
 CSRCS += up_unblocktask.c up_blocktask.c up_releasepending.c
 CSRCS += up_reprioritizertr.c up_exit.c up_schedulesigaction.c up_spiflash.c
-CSRCS += up_allocateheap.c up_devconsole.c up_qspiflash.c
+CSRCS += up_allocateheap.c up_qspiflash.c
 
 VPATH = sim
 DEPPATH = $(patsubst %,--dep-path %,$(subst :, ,$(VPATH)))
@@ -82,6 +82,7 @@ endif
 
 ifeq ($(CONFIG_SMP),y)
   CSRCS += up_smpsignal.c up_smphook.c up_cpuidlestack.c
+  HOSTCFLAGS += -DCONFIG_SMP=1 -DCONFIG_SMP_NCPUS=$(CONFIG_SMP_NCPUS)
   HOSTSRCS += up_simsmp.c
 endif
 
@@ -92,7 +93,7 @@ endif
 endif
 
 ifeq ($(CONFIG_DEV_CONSOLE),y)
-  CSRCS += up_uartwait.c
+  CSRCS += up_devconsole.c up_uartwait.c
   HOSTSRCS += up_simuart.c
 endif
 
@@ -157,10 +158,6 @@ else # HOSTOS != Cygwin
 endif # HOSTOS != Cygwin
 endif # CONFIG_NET_ETHERNET
 endif # CONFIG_SIM_NETDEV
-
-ifeq ($(CONFIG_SMP),y)
-  HOSTCFLAGS += -DCONFIG_SMP=1 -DCONFIG_SMP_NCPUS=$(CONFIG_SMP_NCPUS)
-endif
 
 ifeq ($(CONFIG_FS_HOSTFS),y)
   HOSTSRCS += up_hostfs.c
