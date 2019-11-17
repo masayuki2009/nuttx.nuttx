@@ -1,8 +1,8 @@
 /****************************************************************************
- * arch/arm/include/setjmp.h
+ * libs/libc/unistd/lib_getrusage.c
  *
- *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
- *   Author: David S. Alessio <David@DSA.Consulting>
+ *   Copyright (C) 2019 Xiaomi Inc. All rights reserved.
+ *   Author:  Xiang Xiao <xiaoxiang@xiaomi.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,72 +33,46 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_INCLUDE_SETJUMP_H
-#define __ARCH_ARM_INCLUDE_SETJUMP_H 1
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
+#include <string.h>
+#include <errno.h>
+
+#include <sys/resource.h>
+
 /****************************************************************************
- * Public Types
+ * Public Functions
  ****************************************************************************/
 
-#ifdef CONFIG_ARCH_ARMV7M
-struct setjmp_buf_s
+/****************************************************************************
+ * Name: getrusage
+ *
+ * Description:
+ *   The getrusage() function shall provide measures of the resources used
+ *   by the current process or its terminated and waited-for child processes.
+ *   If the value of the who argument is RUSAGE_SELF, information shall be
+ *   returned about resources used by the current process. If the value of
+ *   the who argument is RUSAGE_CHILDREN, information shall be returned
+ *   about resources used by the terminated and waited-for children of the
+ *   current process. If the child is never waited for (for example, if the
+ *   parent has SA_NOCLDWAIT set or sets SIGCHLD to SIG_IGN), the resource
+ *   information for the child process is discarded and not included in the
+ *   resource information provided by getrusage().
+ *
+ ****************************************************************************/
+
+int getrusage(int who, FAR struct rusage *r_usage)
 {
-  /* Note: core registers r0-r3 are caller-saved */
+  if (r_usage == NULL)
+    {
+      set_errno(EINVAL);
+      return ERROR;
+    }
 
-  unsigned r4;
-  unsigned r5;
-  unsigned r6;
-  unsigned r7;
-  unsigned r8;
-  unsigned r9;
-  unsigned r10;
-  unsigned r11;
-  unsigned ip; /* this is really sp */
-  unsigned lr;
-
-#ifdef CONFIG_ARCH_FPU
-  /* note: FPU registers s0-s15 are caller-saved */
-
-  float    s16;
-  float    s17;
-  float    s18;
-  float    s19;
-  float    s20;
-  float    s21;
-  float    s22;
-  float    s23;
-  float    s24;
-  float    s25;
-  float    s26;
-  float    s27;
-  float    s28;
-  float    s29;
-  float    s30;
-  float    s31;
-
-  unsigned fpscr;
-#endif
-};
-
-/* Traditional typedef for setjmp_buf */
-
-typedef struct setjmp_buf_s jmp_buf[1];
-
-#else
-#  error "setjmp() not compiled!"
-#endif /* CONFIG_ARCH_ARMV7M */
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
-int setjmp(jmp_buf env);
-void longjmp(jmp_buf env, int val) noreturn_function;
-
-#endif /* __ARCH_ARM_INCLUDE_SETJUMP_H */
+  memset(r_usage, 0, sizeof(*r_usage));
+  return OK;
+}
