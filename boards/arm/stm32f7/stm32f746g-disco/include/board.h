@@ -170,8 +170,6 @@
 #define STM32_RCC_DCKCFGR1_DFSDM1SRC   0
 #define STM32_RCC_DCKCFGR1_ADFSDM1SRC  0
 
-
-
 /* Configure factors for  PLLI2S clock */
 
 #define STM32_RCC_PLLI2SCFGR_PLLI2SN   RCC_PLLI2SCFGR_PLLI2SN(192)
@@ -413,12 +411,19 @@
 #define BOARD_LTDC_PLLSAIR              5
 
 /* Pixel Clock Polarity */
+
 #define BOARD_LTDC_GCR_PCPOL            0 /* !LTDC_GCR_PCPOL */
+
 /* Data Enable Polarity */
+
 #define BOARD_LTDC_GCR_DEPOL            0 /* !LTDC_GCR_DEPOL */
+
 /* Vertical Sync Polarity */
+
 #define BOARD_LTDC_GCR_VSPOL            0 /* !LTDC_GCR_VSPOL */
-/* Horicontal Sync Polarity */
+
+/* Horizontal Sync Polarity */
+
 #define BOARD_LTDC_GCR_HSPOL            0 /* !LTDC_GCR_HSPOL */
 
 /* GPIO pinset */
@@ -456,5 +461,14 @@
 #define GPIO_LTDC_HSYNC                 GPIO_LTDC_HSYNC_2
 #define GPIO_LTDC_DE                    GPIO_LTDC_DE_3
 #define GPIO_LTDC_CLK                   GPIO_LTDC_CLK_3
+
+/* QSPI pinset */
+
+#define GPIO_QSPI_CS                    GPIO_QUADSPI_BK1_NCS
+#define GPIO_QSPI_IO0                   GPIO_QUADSPI_BK1_IO0_3
+#define GPIO_QSPI_IO1                   GPIO_QUADSPI_BK1_IO1_3
+#define GPIO_QSPI_IO2                   GPIO_QUADSPI_BK1_IO2_1
+#define GPIO_QSPI_IO3                   GPIO_QUADSPI_BK1_IO3_2
+#define GPIO_QSPI_SCK                   GPIO_QUADSPI_CLK
 
 #endif  /* __BOARDS_ARM_STM32F7_STM32F746G_DISCO_INCLUDE_BOARD_H */
