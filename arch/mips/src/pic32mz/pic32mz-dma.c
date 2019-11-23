@@ -66,7 +66,7 @@
 
 /* Convert a virtual address to a physical address */
 
-#define VIRT2PHY(a) ((a) & 0x1FFFFFFF)
+#define PHYS_ADDR(va) ((uint32_t)(va) & 0x1fffffff)
 
 /****************************************************************************
  * Private Types
@@ -137,12 +137,12 @@ static inline void pic32mz_dma_abortirq(FAR struct pic32mz_dmach_s *dmach,
 static inline void pic32mz_dma_forceabort(FAR struct pic32mz_dmach_s *dmach);
 
 static inline void pic32mz_dma_intctrl(FAR struct pic32mz_dmach_s *dmach,
-                                       uint32_t cfg);
+                                       uint8_t cfg);
 static inline void pic32mz_dma_intclr(FAR struct pic32mz_dmach_s *dmach);
 static int pic32mz_dma_interrupt(int irq, void *context, FAR void *arg);
 
 static void pic32mz_dma_mode(FAR struct pic32mz_dmach_s *dmach,
-                             enum pic32mz_dma_chmode_e mode);
+                             uint8_t mode);
 static void pic32mz_dma_config(FAR struct pic32mz_dmach_s *dmach,
                                FAR const struct pic32mz_dma_chcfg_s *cfg);
 
@@ -370,7 +370,7 @@ static inline void pic32mz_dma_priority(FAR struct pic32mz_dmach_s *dmach,
 static inline void pic32mz_dma_srcaddr(FAR struct pic32mz_dmach_s *dmach,
                                        uint32_t addr)
 {
-  pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_SSA_OFFSET, VIRT2PHY(addr));
+  pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_SSA_OFFSET, PHYS_ADDR(addr));
 }
 
 /****************************************************************************
@@ -384,7 +384,7 @@ static inline void pic32mz_dma_srcaddr(FAR struct pic32mz_dmach_s *dmach,
 static inline void pic32mz_dma_destaddr(FAR struct pic32mz_dmach_s *dmach,
                                         uint32_t addr)
 {
-  pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_DSA_OFFSET, VIRT2PHY(addr));
+  pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_DSA_OFFSET, PHYS_ADDR(addr));
 }
 
 /****************************************************************************
@@ -475,7 +475,7 @@ static inline void pic32mz_dma_forcestart(FAR struct pic32mz_dmach_s *dmach)
 static inline void pic32mz_dma_abortirq(FAR struct pic32mz_dmach_s *dmach,
                                         int irq)
 {
-  /* Enable start irq matching. */
+  /* Enable abort irq matching. */
 
   pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_ECONSET_OFFSET, DMACH_ECON_AIRQEN);
 
@@ -522,7 +522,7 @@ static inline void pic32mz_dma_intclr(FAR struct pic32mz_dmach_s *dmach)
  ****************************************************************************/
 
 static inline void pic32mz_dma_intctrl(FAR struct pic32mz_dmach_s *dmach,
-                                       uint32_t cfg)
+                                       uint8_t cfg)
 {
   /* Clear all interrupts flags */
 
@@ -535,7 +535,8 @@ static inline void pic32mz_dma_intctrl(FAR struct pic32mz_dmach_s *dmach,
 
   /* Enable the interrupts requested. */
 
-  pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_INTSET_OFFSET, cfg);
+  pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_INTSET_OFFSET,
+                     cfg << DMACH_INT_EN_SHIFT);
 }
 
 /****************************************************************************
@@ -564,6 +565,7 @@ static int pic32mz_dma_interrupt(int irq, void *context, FAR void *arg)
 
   /* Clear the interrupt flags. */
 
+  up_clrpend_irq(dmach->irq);
   pic32mz_dma_intclr(dmach);
 
   /* Invoke the callback. */
@@ -585,7 +587,7 @@ static int pic32mz_dma_interrupt(int irq, void *context, FAR void *arg)
  ****************************************************************************/
 
 static void pic32mz_dma_mode(FAR struct pic32mz_dmach_s *dmach,
-                             enum pic32mz_dma_chmode_e mode)
+                             uint8_t mode)
 {
   if (mode & PIC32MZ_DMA_MODE_BASIC)
     {
@@ -615,21 +617,31 @@ static void pic32mz_dma_config(FAR struct pic32mz_dmach_s *dmach,
 
   /* Set the channel's start and abort IRQs if they are specified */
 
-  if (cfg->startirq != PIC32MZ_DMA_NOEVENT)
+  if (cfg->startirq != PIC32MZ_DMA_NOIRQ)
     {
       pic32mz_dma_startirq(dmach, cfg->startirq);
     }
+  else
+    {
+      pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_ECONCLR_OFFSET,
+                         DMACH_ECON_SIRQEN);
+    }
 
-  if (cfg->abortirq != PIC32MZ_DMA_NOEVENT)
+  if (cfg->abortirq != PIC32MZ_DMA_NOIRQ)
     {
       pic32mz_dma_abortirq(dmach, cfg->abortirq);
+    }
+  else
+    {
+      pic32mz_dma_putreg(dmach, PIC32MZ_DMACH_ECONCLR_OFFSET,
+                         DMACH_ECON_AIRQEN);
     }
 
   /* Set the interrupt event(s) */
 
   pic32mz_dma_intctrl(dmach, cfg->event);
 
-  /* Set the cahnnel's mode */
+  /* Set the channel's mode */
 
   pic32mz_dma_mode(dmach, cfg->mode);
 
@@ -832,7 +844,10 @@ DMA_HANDLE pic32mz_dma_alloc(const struct pic32mz_dma_chcfg_s *cfg)
 
           /* Config this channel */
 
-          pic32mz_dma_config(dmach, cfg);
+          if (cfg != NULL)
+            {
+              pic32mz_dma_config(dmach, cfg);
+            }
 
           break;
         }
@@ -887,6 +902,28 @@ void pic32mz_dma_free(DMA_HANDLE handle)
   up_clrpend_irq(dmach->irq);
 }
 
+/*******************************************************************************
+ * Name: pic32mz_dma_chcfg
+ *
+ * Description:
+ *   Configure a DMA channel.
+ *   This config can be done during alloc, however if reconfig is needed,
+ *   this functions should be used.
+ *
+ ******************************************************************************/
+
+int pic32mz_dma_chcfg(DMA_HANDLE handle,
+                      FAR const struct pic32mz_dma_chcfg_s *cfg)
+{
+  struct pic32mz_dmach_s *dmach = (struct pic32mz_dmach_s *)handle;
+
+  DEBUGASSERT(dmach != NULL);
+
+  pic32mz_dma_config(dmach, cfg);
+
+  return OK;
+}
+
 /****************************************************************************
  * Name: pic32mz_dma_xfrsetup
  *
@@ -909,7 +946,7 @@ int pic32mz_dma_xfrsetup(DMA_HANDLE handle,
 
   /* Set transfer size (source, destination and cell) */
 
-  pic32mz_dma_srcsize(dmach, cfg->srcsize);
+  pic32mz_dma_srcsize(dmach,  cfg->srcsize);
   pic32mz_dma_destsize(dmach, cfg->destsize);
   pic32mz_dma_cellsize(dmach, cfg->cellsize);
 
@@ -939,9 +976,9 @@ int pic32mz_dma_start(DMA_HANDLE handle, dma_callback_t callback, void *arg)
 
   pic32mz_dma_enable(dmach);
 
-  /* If no event is set to start the channel, force it */
+  /* If no irq is set to start the channel, force it */
 
-  if (dmach->cfg.startirq == PIC32MZ_DMA_NOEVENT)
+  if (dmach->cfg.startirq == PIC32MZ_DMA_NOIRQ)
     {
       pic32mz_dma_forcestart(dmach);
     }
