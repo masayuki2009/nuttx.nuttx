@@ -125,7 +125,7 @@ static uint16_t icmpv6_poll_eventhandler(FAR struct net_driver_s *dev,
       /* Check for data or connection availability events. */
 
       eventset = 0;
-      if ((flags & ICMPv6_ECHOREPLY) != 0)
+      if ((flags & ICMPv6_NEWDATA) != 0)
         {
           eventset |= (POLLIN & info->fds->events);
         }
@@ -135,13 +135,6 @@ static uint16_t icmpv6_poll_eventhandler(FAR struct net_driver_s *dev,
       if ((flags & NETDEV_DOWN) != 0)
         {
           eventset |= (POLLHUP | POLLERR);
-        }
-
-      /*  ICMP_POLL is a sign that we are free to send data. */
-
-      else if ((flags & DEVPOLL_MASK) == ICMPv6_POLL)
-        {
-          eventset |= (POLLOUT & info->fds->events);
         }
 
       /* Awaken the caller of poll() is requested event occurred. */
@@ -219,11 +212,6 @@ int icmpv6_pollsetup(FAR struct socket *psock, FAR struct pollfd *fds)
   cb->priv  = (FAR void *)info;
   cb->event = icmpv6_poll_eventhandler;
 
-  if ((fds->events & POLLOUT) != 0)
-    {
-      cb->flags |= ICMPv6_POLL;
-    }
-
   if ((fds->events & POLLIN) != 0)
     {
       cb->flags |= ICMPv6_NEWDATA;
@@ -243,6 +231,12 @@ int icmpv6_pollsetup(FAR struct socket *psock, FAR struct pollfd *fds)
 
       fds->revents |= (POLLRDNORM & fds->events);
     }
+
+  /* Always report POLLWRNORM if caller request it because we don't utilize
+   * IOB buffer for sending.
+   */
+
+  fds->revents |= (POLLWRNORM & fds->events);
 
   /* Check if any requested events are already in effect */
 
