@@ -1,8 +1,8 @@
 /****************************************************************************
- * arch/risc-v/src/fe310/fe310_memorymap.h
+ * include/nuttx/sensors/aht10.h
  *
- *   Copyright (C) 2019 Masayuki Ishikawa. All rights reserved.
- *   Author: Masayuki Ishikawa <masayuki.ishikawa@gmail.com>
+ *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
+ *   Author: kyChu <kyChu@qq.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -14,6 +14,9 @@
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -30,32 +33,55 @@
  *
  ****************************************************************************/
 
-#ifndef _ARCH_RISCV_SRC_FE310_FE310_MEMORYMAP_H
-#define _ARCH_RISCV_SRC_FE310_FE310_MEMORYMAP_H
+#ifndef __INCLUDE_NUTT_SENSORS_AHT10_H
+#define __INCLUDE_NUTT_SENSORS_AHT10_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include "hardware/fe310_memorymap.h"
-#include "hardware/fe310_uart.h"
-#include "hardware/fe310_clint.h"
-#include "hardware/fe310_plic.h"
+#include <nuttx/sensors/ioctl.h>
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* Idle thread stack starts from _ebss */
+#define CONFIG_AHT10_ADDR 0x38
 
-#ifndef __ASSEMBLY__
-#define FE310_IDLESTACK_BASE  (uint32_t)&_ebss
-#else
-#define FE310_IDLESTACK_BASE  _ebss
-#endif
+/****************************************************************************
+ * Public Types
+ ****************************************************************************/
 
-#define FE310_IDLESTACK_SIZE (CONFIG_IDLETHREAD_STACKSIZE & ~3)
-#define FE310_IDLESTACK_TOP  (FE310_IDLESTACK_BASE + FE310_IDLESTACK_SIZE)
+struct i2c_master_s;  /* Forward reference */
 
-#endif  /* _ARCH_RISCV_SRC_FE310_FE310_MEMORYMAP_H */
+struct aht10_conv_data_s
+{
+  int temperature;
+  int humidity;
+};
 
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: aht10_register
+ *
+ * Description:
+ *   Register the SHT2x character device as 'devpath'
+ *
+ * Input Parameters:
+ *   devpath - The full path to the driver to register. E.g., "/dev/temp0"
+ *   i2c     - An instance of the I2C interface to use to communicate with
+ *             the AHT10
+ *   addr    - The I2C address of the AHT10 (always 0x38).
+ *
+ * Returned Value:
+ *   Zero (OK) on success; a negated errno value on failure.
+ *
+ ****************************************************************************/
+
+int aht10_register(FAR const char *devpath, FAR struct i2c_master_s *i2c,
+                   uint8_t addr);
+
+#endif /* __INCLUDE_NUTT_SENSORS_AHT10_H */
