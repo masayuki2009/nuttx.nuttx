@@ -85,6 +85,14 @@
  * Set USB1 PLL (PLL3) to fOut    = (24Mhz * 20)
  *                         480Mhz = (24Mhz * 20)
  *
+ * Set LPSPI PLL3 PFD0 to fOut    = (480Mhz / 12 * 18)
+ *                        720Mhz  = (480Mhz / 12 * 18)
+ *                         90Mhz  = (720Mhz / LSPI_PODF_DIVIDER)
+ *
+ * Set LPI2C PLL3 / 8 to   fOut   = (480Mhz / 8)
+ *                         60Mhz  = (480Mhz / 8)
+ *                         12Mhz  = (60Mhz / LSPI_PODF_DIVIDER)
+ *
  * These clock frequencies can be verified via the CCM_CLKO1 pin and sending
  * the appropriate clock to it with something like;
  *
@@ -103,11 +111,16 @@
 #define IMXRT_PERCLK_CLK_SEL       CCM_CSCMR1_PERCLK_CLK_SEL_IPG_CLK_ROOT
 #define IMXRT_PERCLK_PODF_DIVIDER  2
 #define IMXRT_SEMC_PODF_DIVIDER    4
+
 #define IMXRT_LPSPI_CLK_SELECT     CCM_CBCMR_LPSPI_CLK_SEL_PLL3_PFD0
 #define IMXRT_LSPI_PODF_DIVIDER    8
+
+#define IMXRT_LPI2C_CLK_SELECT     CCM_CSCDR2_LPI2C_CLK_SEL_PLL3_60M
+#define IMXRT_LSI2C_PODF_DIVIDER   5
+
 #define IMXRT_USDHC1_CLK_SELECT    CCM_CSCMR1_USDHC1_CLK_SEL_PLL2_PFD0
 #define IMXRT_USDHC1_PODF_DIVIDER  1
-#define IMXRT_USDHC1_CLK_SELECT    CCM_CSCMR1_USDHC2_CLK_SEL_PLL2_PFD0
+#define IMXRT_USDHC2_CLK_SELECT    CCM_CSCMR1_USDHC2_CLK_SEL_PLL2_PFD0
 #define IMXRT_USDHC2_PODF_DIVIDER  4
 
 #define IMXRT_SYS_PLL_DIV_SELECT   CCM_ANALOG_PLL_SYS_DIV_SELECT_22
@@ -250,6 +263,13 @@
 #define PIN_USDHC1_D3       (GPIO_USDHC1_DATA3_1 | IOMUX_USDHC1_DATAX_DEFAULT) /* SD_B0_01 */
 #define PIN_USDHC1_DCLK     (GPIO_USDHC1_CLK_1   | IOMUX_USDHC1_CLK_DEFAULT)   /* SD_B0_03 */
 #define PIN_USDHC1_CMD      (GPIO_USDHC1_CMD_1   | IOMUX_USDHC1_CMD_DEFAULT)   /* SD_B0_02 */
+
+/* N.B. This is not using a USDHC CD_B input but a regular GPIO.  The
+ * post-fix _GPIO enables GPIO testing logic in the USDHC driver.
+ */
+
+#define PIN_USDHC1_CD_GPIO  (IOMUX_VSD_DEFAULT | \
+                             GPIO_PORT3 | GPIO_PIN19 )                        /* SD_B0_06 */
 
 /*****************************************************************************
  * Public Types
