@@ -1,8 +1,8 @@
 /****************************************************************************
- * arch/arm/src/samd2l2/sam_adc.h
+ * arch/arm/src/am335x/am335x_can.h
  *
- *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
- *   Author: Alexander Vasiljev <alexvasiljev@gmail.com>
+ *   Copyright (C) 2019 Petro Karashchenko. All rights reserved.
+ *   Author: Petro Karashchenko <petro.karashchenko@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,61 +33,54 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_SAMD2L2_SAM_ADC_H
-#define __ARCH_ARM_SRC_SAMD2L2_SAM_ADC_H
+#ifndef __ARCH_ARM_SRC_AM335X_AM335X_CAN_H
+#define __ARCH_ARM_SRC_AM335X_AM335X_CAN_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/can/can.h>
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "sam_config.h"
-#include "sam_port.h"
-
-#if defined(CONFIG_ARCH_FAMILY_SAMD20) || defined(CONFIG_ARCH_FAMILY_SAMD21)
-#  include "hardware/samd_adc.h"
-#elif defined(CONFIG_ARCH_FAMILY_SAML21)
-#  include "hardware/saml_adc.h"
-#else
-#  error Unrecognized SAMD/L architecture
-#endif
+#include "chip.h"
+#include "hardware/am335x_dcan.h"
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
-#undef EXTERN
-#if defined(__cplusplus)
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
-#endif
-
 /****************************************************************************
- * Name: sam_adcinitialize
+ * Name: am335x_can_initialize
  *
  * Description:
- *   Initialize the ADC. See sam_adc.c for more details.
+ *   Initialize the selected CAN port
  *
  * Input Parameters:
- *   genclk      - Number of the Clock Generator to use.
+ *   Port number (for hardware that has multiple CAN interfaces)
  *
  * Returned Value:
- *   Valid ADC device structure reference on success; a NULL on failure
+ *   Valid CAN device structure reference on success; a NULL on failure
  *
  ****************************************************************************/
 
-struct adc_dev_s;
-struct adc_dev_s *sam_adcinitialize(int genclk);
+FAR struct can_dev_s *am335x_can_initialize(int port);
 
-#undef EXTERN
-#if defined(__cplusplus)
-}
-#endif
-#endif /* __ARCH_ARM_SRC_SAMD2L2_SAM_ADC_H */
+/****************************************************************************
+ * Name: am335x_can_uninitialize
+ *
+ * Description:
+ *   De-initialize the selected CAN port, and power down the device.
+ *
+ * Input Parameters:
+ *   Device structure as returned by the am335x_can_initialize()
+ *
+ * Returned Value:
+ *   OK on success, ERROR when internal reference count mismatch or dev
+ *   points to invalid hardware device.
+ *
+ ****************************************************************************/
+
+void am335x_can_uninitialize(FAR struct can_dev_s *dev);
+
+#endif /* __ARCH_ARM_SRC_AM335X_AM335X_CAN_H */
