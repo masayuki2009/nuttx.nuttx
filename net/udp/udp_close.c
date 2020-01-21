@@ -1,7 +1,7 @@
 /****************************************************************************
- * net/udp/udp_psock_send.c
+ * net/udp/udp_close.c
  *
- *   Copyright (C) 2015, 2018 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2020 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,51 +38,101 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#if defined(CONFIG_NET) && defined(CONFIG_NET_UDP)
 
-#include <sys/types.h>
-#include <assert.h>
 #include <errno.h>
+#include <debug.h>
+#include <assert.h>
 
 #include <nuttx/net/net.h>
+#include <nuttx/net/udp.h>
 
-#include "socket/socket.h"
+#include "devif/devif.h"
 #include "udp/udp.h"
+#include "socket/socket.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: psock_udp_send
+ * Name: udp_close
  *
  * Description:
- *   Implements send() for connected UDP sockets
+ *   Break any current UDP connection
+ *
+ * Input Parameters:
+ *   conn - UDP connection structure
+ *
+ * Returned Value:
+ *   None
+ *
+ * Assumptions:
+ *   Called from normal user-level logic
  *
  ****************************************************************************/
 
-ssize_t psock_udp_send(FAR struct socket *psock, FAR const void *buf,
-                       size_t len)
+int udp_close(FAR struct socket *psock)
 {
-  DEBUGASSERT(psock != NULL && psock->s_crefs > 0 && psock->s_conn != NULL);
-  DEBUGASSERT(psock->s_type == SOCK_DGRAM);
+  FAR struct udp_conn_s *conn;
+  unsigned int timeout = UINT_MAX;
+  int ret;
 
-  /* Was the UDP socket connected via connect()?
-   * REVISIT:  This same test is performed in psock_udp_sendto() where
-   * -EDESTADDRREQ is returned.  There is a fine distinction in the
-   * meaning of the reported errors that I am not sure I have correct.
+  /* Interrupts are disabled here to avoid race conditions */
+
+  net_lock();
+
+  conn = (FAR struct udp_conn_s *)psock->s_conn;
+  DEBUGASSERT(conn != NULL);
+
+#ifdef CONFIG_NET_SOLINGER
+  /* SO_LINGER
+   *   Lingers on a close() if data is present. This option controls the
+   *   action taken when unsent messages queue on a socket and close() is
+   *   performed. If SO_LINGER is set, the system shall block the calling
+   *   thread during close() until it can transmit the data or until the
+   *   time expires. If SO_LINGER is not specified, and close() is issued,
+   *   the system handles the call in a way that allows the calling thread
+   *   to continue as quickly as possible. This option takes a linger
+   *   structure, as defined in the <sys/socket.h> header, to specify the
+   *   state of the option and linger interval.
    */
 
-  if (!_SS_ISCONNECTED(psock->s_flags))
+  if (_SO_GETOPT(psock->s_options, SO_LINGER))
     {
-      /* No, then it is not legal to call send() with this socket.
-       * ENOTCONN - The socket is not connected or otherwise has not had
-       * the peer pre-specified.
+      timeout = _SO_TIMEOUT(psock->s_linger);
+    }
+#endif
+
+  /* Wait until for the buffered TX data to be sent. */
+
+  UNUSED(timeout);
+  ret = udp_txdrain(psock, timeout);
+  if (ret < 0)
+    {
+      /* udp_txdrain may fail, but that won't stop us from closing
+       * the socket.
        */
 
-      return -ENOTCONN;
+      nerr("ERROR: udp_txdrain() failed: %d\n", ret);
     }
 
-  /* Let psock_sendto() do all of the work work */
+#ifdef CONFIG_NET_UDP_WRITE_BUFFERS
+  /* Free any semi-permanent write buffer callback in place. */
 
-  return psock_udp_sendto(psock, buf, len, 0, NULL, 0);
+  if (psock->s_sndcb != NULL)
+    {
+      udp_callback_free(conn->dev, conn, psock->s_sndcb);
+      psock->s_sndcb = NULL;
+    }
+#endif
+
+  /* And free the connection structure */
+
+  conn->crefs = 0;
+  udp_free(psock->s_conn);
+  net_unlock();
+  return OK;
 }
+
+#endif /* CONFIG_NET && CONFIG_NET_UDP */
