@@ -2121,7 +2121,7 @@ nuttx/
  |   |       `- moteino-mega/
  |   |           `- README.txt
  |   |- hc/
- |   |   `- mcs92s12ne64/
+ |   |   `- m9s12/
  |   |       |- demo9s12ne64/
  |   |       |   `- README.txt
  |   |       `- ne64badge/
@@ -2152,10 +2152,10 @@ nuttx/
  |   |       `- or1k/
  |   |           `- README.txt
  |   |- renesas/
- |   |   |- m32262f8/
+ |   |   |- m16c/
  |   |   |   `- skp16c26/
  |   |   |       `- README.txt
- |   |   `-sh7032/
+ |   |   `-sh1/
  |   |       `- us7032evb1/
  |   |           `- README.txt
  |   |- risc-v/
@@ -2179,7 +2179,7 @@ nuttx/
  |   |       `- esp32-core/
  |   |           `- README.txt
  |   |- z16/
- |   |   `- z16f2811/
+ |   |   `- z16f/
  |   |       `- z16f2800100zcog/
  |   |           |- configs/nsh/README.txt
  |   |           |- configs/ostest/README.txt
