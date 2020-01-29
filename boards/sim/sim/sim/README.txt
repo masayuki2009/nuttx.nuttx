@@ -153,12 +153,12 @@ The simulation build is a two pass build:
     created called nuttx.rel.  This includes all of the files that are part
     of the NuttX "domain."
 
-  2. On the second pass, the files are are in the host OS domain are build
+  2. On the second pass, the files which are in the host OS domain are build
      and then linked with nuttx.rel to generate the simulation program.
 
 NuttX is a POSIX compliant RTOS and is normally build on a POSIX compliant
 host environment (like Linux or Cygwin).  As a result, the same symbols are
-exported by both the NuttX doman and the host domain.  How can we keep them
+exported by both the NuttX domain and the host domain.  How can we keep them
 separate?
 
 This is done using the special file nuttx-name.dat.  This file just contains
@@ -180,6 +180,10 @@ Often you can survive such events.  For example, it really should not matter
 which version of strlen() you call.  Other times, it can cause subtle,
 mysterious errors.  Usually, however, callng the wrong function in the wrong
 OS results in a fatal crash.
+
+On macOS, instead of objcopy, -unexported_symbols_list linker option is
+used to hide symbols in the NuttX domain, using the same list of symbols
+from nuttx-name.dat.
 
 Networking Issues
 -----------------
@@ -485,6 +489,17 @@ Common Configuration Information
         CONFIG_HOST_X86_64=y
         CONFIG_SIM_X8664_MICROSOFT=y
         CONFIG_SIM_X8664_SYSTEMV=n
+        CONFIG_SIM_M32=n
+
+     g. macOS, 64-bit, 64-bit build
+
+        CONFIG_HOST_LINUX=n
+        CONFIG_HOST_MACOS=y
+        CONFIG_HOST_WINDOWS=n
+        CONFIG_HOST_X86=n
+        CONFIG_HOST_X86_64=y
+        CONFIG_SIM_X8664_MICROSOFT=n
+        CONFIG_SIM_X8664_SYSTEMV=y
         CONFIG_SIM_M32=n
 
 Configuration Sub-Directories
