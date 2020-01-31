@@ -1,7 +1,7 @@
 /****************************************************************************
- * net/socket/net_dupsd2.c
+ * sched/sched/sched_getcpu.c
  *
- *   Copyright (C) 2009, 2011, 2017 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2016, 2018 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,73 +39,42 @@
 
 #include <nuttx/config.h>
 
-#include <sys/socket.h>
 #include <sched.h>
-#include <errno.h>
-#include <debug.h>
+#include <nuttx/arch.h>
 
-#include <nuttx/net/net.h>
-
-#include "socket/socket.h"
+#include "sched/sched.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: net_dupsd2
+ * Name: sched_getcpu
  *
  * Description:
- *   Clone a socket descriptor to an arbitray descriptor number.  If file
- *   descriptors are implemented, then this is called by dup2() for the case
- *   of socket file descriptors.  If file descriptors are not implemented,
- *   then this function IS dup2().
+ *    sched_getcpu() returns the number of the CPU on which the calling
+ *    thread is currently executing.
+ *
+ *    The return CPU number is guaranteed to be valid only at the time of
+ *    the call.  Unless the CPU affinity has been fixed using
+ *    sched_setaffinity(), the OS might change the CPU at any time.  The
+ *    caller must allow for the possibility that the information returned is
+ *    no longer current by the time the call returns.
+ *
+ *    Non-Standard.  Functionally equivalent to the GLIBC __GNU_SOURCE
+ *    interface of the same name.
+ *
+ * Input Parameters:
+ *   None
  *
  * Returned Value:
- *   On success, returns the number of characters sent.  On any error,
- *   a negated errno value is returned:.
+ *   A non-negative CPU number is returned on success.  -1 (ERROR) is
+ *   returned on failure with the errno value set to indicate the cause of
+ *   the failure.
  *
  ****************************************************************************/
 
-int net_dupsd2(int sockfd1, int sockfd2)
+int sched_getcpu(void)
 {
-  FAR struct socket *psock1;
-  FAR struct socket *psock2;
-  int ret;
-
-  /* Lock the scheduler throughout the following */
-
-  sched_lock();
-
-  /* Get the socket structures underly both descriptors */
-
-  psock1 = sockfd_socket(sockfd1);
-  psock2 = sockfd_socket(sockfd2);
-
-  /* Verify that the sockfd1 and sockfd2 both refer to valid socket
-   * descriptors and that sockfd2 corresponds to an allocated socket
-   */
-
-  if (psock1 == NULL || psock2 == NULL || psock1->s_crefs <= 0)
-    {
-      ret = -EBADF;
-      goto errout;
-    }
-
-  /* If sockfd2 also valid, allocated socket, then we will have to
-   * close it!
-   */
-
-  if (psock2->s_crefs > 0)
-    {
-      net_close(sockfd2);
-    }
-
-  /* Duplicate the socket state */
-
-  ret = net_clone(psock1, psock2);
-
-errout:
-  sched_unlock();
-  return ret;
+  return up_cpu_index();  /* Does not fail */
 }
