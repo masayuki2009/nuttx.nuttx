@@ -197,13 +197,6 @@
 
 #ifndef __ASSEMBLY__
 
-#ifdef CONFIG_SIM_X11FB
-extern int g_x11initialized;
-#if defined(CONFIG_SIM_TOUCHSCREEN) || defined(CONFIG_SIM_AJOYSTICK)
-extern volatile int g_eventloop;
-#endif
-#endif
-
 #ifdef CONFIG_SMP
 /* These spinlocks are used in the SMP configuration in order to implement
  * up_cpu_pause().  The protocol for CPUn to pause CPUm is as follows
@@ -291,6 +284,7 @@ unsigned long up_getwalltime(void);
 int up_x11initialize(unsigned short width, unsigned short height,
                      void **fbmem, size_t *fblen, unsigned char *bpp,
                      unsigned short *stride);
+void up_x11update(void);
 #ifdef CONFIG_FB_CMAP
 int up_x11cmap(unsigned short first, unsigned short len,
                unsigned char *red, unsigned char *green,
@@ -300,21 +294,17 @@ int up_x11cmap(unsigned short first, unsigned short len,
 
 /* up_touchscreen.c *********************************************************/
 
+#ifdef CONFIG_SIM_TOUCHSCREEN
 int  sim_tsc_initialize(int minor);
 void sim_tsc_uninitialize(void);
-
-/* up_eventloop.c ***********************************************************/
-
-#if defined(CONFIG_SIM_X11FB) && \
-   (defined(CONFIG_SIM_TOUCHSCREEN) || defined(CONFIG_SIM_AJOYSTICK))
-void up_x11events(void);
 #endif
 
 /* up_eventloop.c ***********************************************************/
 
 #if defined(CONFIG_SIM_X11FB) && \
    (defined(CONFIG_SIM_TOUCHSCREEN) || defined(CONFIG_SIM_AJOYSTICK))
-int up_buttonevent(int x, int y, int buttons);
+void up_x11events(void);
+void up_buttonevent(int x, int y, int buttons);
 #endif
 
 /* up_ajoystick.c ***********************************************************/
