@@ -49,8 +49,6 @@
 #include <nuttx/net/loopback.h>
 #include <nuttx/net/tun.h>
 #include <nuttx/net/telnet.h>
-#include <nuttx/syslog/syslog.h>
-#include <nuttx/syslog/ramlog.h>
 #include <nuttx/syslog/syslog_console.h>
 #include <nuttx/serial/pty.h>
 #include <nuttx/crypto/crypto.h>
@@ -192,12 +190,8 @@ void up_initialize(void)
 
 #if defined (CONFIG_ARM_LWL_CONSOLE)
   lwlconsole_init();
-#elif defined(CONFIG_DEV_LOWCONSOLE)
-  lowconsole_init();
 #elif defined(CONFIG_CONSOLE_SYSLOG)
   syslog_console_init();
-#elif defined(CONFIG_RAMLOG_CONSOLE)
-  ramlog_consoleinit();
 #endif
 
 #ifdef CONFIG_PSEUDOTERM_SUSV1
@@ -205,13 +199,6 @@ void up_initialize(void)
 
   ptmx_register();
 #endif
-
-  /* Early initialization of the system logging device.  Some SYSLOG channel
-   * can be initialized early in the initialization sequence because they
-   * depend on only minimal OS initialization.
-   */
-
-  syslog_initialize(SYSLOG_INIT_EARLY);
 
 #if defined(CONFIG_CRYPTO)
   /* Initialize the HW crypto and /dev/crypto */

@@ -189,9 +189,9 @@ SYSLOG Channels
   Prototype:
 
     #ifndef CONFIG_ARCH_SYSLOG
-    int syslog_initialize(enum syslog_init_e phase);
+    int syslog_initialize(void);
     #else
-    #  define syslog_initialize(phase)
+    #  define syslog_initialize()
     #endif
 
   Description:
@@ -209,10 +209,6 @@ SYSLOG Channels
       logic will provide its own SYSLOG device initialize which must include
       as a minimum a call to syslog_channel() to use the device.
 
-  Input Parameters:
-
-    * phase - One of {SYSLOG_INIT_EARLY, SYSLOG_INIT_LATE}
-
   Returned Value:
     Zero (OK) is returned on success; a negated errno value is returned on
     any failure.
@@ -220,17 +216,7 @@ SYSLOG Channels
   Different types of SYSLOG devices have different OS initialization
   requirements.  Some are available immediately at reset, some are available
   after some basic OS initialization, and some only after OS is fully
-  initialized.  In order to satisfy these different initialization
-  requirements, syslog_initialize() is called twice from the boot-up logic:
-
-    * syslog_initialize() is called from the architecture-specific
-      up_initialize() function as some as basic hardware resources have been
-      initialized: Timers, interrupts, etc.  In this case,
-      syslog_initialize() is called with the argument SYSLOG_INIT_EARLY.
-    * syslog_initialize() is called again from nx_start() when the full OS
-      initialization has completed, just before the application main entry
-      point is spawned.  In this case, syslog_initialize() is called with
-      the argument SYSLOG_INIT_LATE.
+  initialized.
 
   There are other types of SYSLOG channel devices that may require even
   further initialization.  For example, the file SYSLOG channel (described
@@ -469,13 +455,6 @@ RAM Logging Device
   ----------------------------
 
     * CONFIG_RAMLOG - Enables the RAM logging feature
-    * CONFIG_RAMLOG_CONSOLE - Use the RAM logging device as a system
-      console. If this feature is enabled (along with CONFIG_DEV_CONSOLE),
-      then all console output will be re-directed to a circular buffer in
-      RAM.  This might be useful, for example, if the only console is a
-      Telnet console.  Then in that case, console output from non-Telnet
-      threads will go to the circular buffer and can be viewed using the NSH
-      dmesg command.  This optional is not useful in other scenarios.
     * CONFIG_RAMLOG_SYSLOG - Use the RAM logging device for the syslogging
       interface.  If this feature is enabled, then all debug output (only)
       will be re-directed to the circular buffer in RAM.  This RAM log can
@@ -485,8 +464,8 @@ RAM Logging Device
     * CONFIG_RAMLOG_NPOLLWAITERS - The number of threads than can be waiting
       for this driver on poll().  Default: 4
 
-  If CONFIG_RAMLOG_CONSOLE or CONFIG_RAMLOG_SYSLOG is selected, then the
-  following must also be provided:
+  If CONFIG_RAMLOG_SYSLOG is selected, then the following must also be
+  provided:
 
     * CONFIG_RAMLOG_BUFSIZE - The size of the circular buffer to use.
       Default: 1024 bytes.
