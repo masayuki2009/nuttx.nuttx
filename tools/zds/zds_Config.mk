@@ -1,5 +1,5 @@
 ############################################################################
-# boards/z80/ez80/scripts/eZ80_Config.defs
+# tools/zds/zds_Config.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -31,7 +31,7 @@ define PREPROCESS
 	$(Q) $(CPP) $(CPPFLAGS) $($(strip $(1))_CPPFLAGS) $(1) -o $(2)
 endef
 
-# COMPILE, ASSEMBLE, MOVEOBJ
+# COMPILE, ASSEMBLE, and helpers
 #
 # The ZDS-II compiler and assembler both generate object files in the
 # current directory with the same name as the source file, but with the .obj
@@ -40,12 +40,10 @@ endef
 #
 # 1. If the foo.obj object belongs in a lower level directory (such as bin/),
 #    then the relative path will be preface the object file name (such as
-#    bin/foo.obj)).  In this case, the build system will call MOVEOBJ to
-#    move the objects in place and nothing special need be done here.
+#    bin/foo.obj)).
 # 2. In other cases, the build system may decorate the object file name such
 #    as a.b.c.foo.obj.  This case is distinguished here by because does not
-#    lie in a lower directory, but lies in the current directory and is
-#    handled within COMPILE and ASSEMBLE.
+#    lie in a lower directory, but lies in the current directory.
 
 define RMOBJS
 	$(call DELFILE, $(1))
@@ -56,7 +54,7 @@ endef
 ifeq ($(CONFIG_WINDOWS_NATIVE),y)
 
 define CONDMOVE
-	$(Q) if not exist $1 (move /Y $2 $3)
+	$(Q) if not exist $1 if exist $2 (move /Y $2 $3)
 endef
 
 define MVOBJS
@@ -80,7 +78,7 @@ endef
 else
 
 define CONDMOVE
-	$(Q) if [ ! -e $(1) ]; then mv -f $(2) $(3) ; fi
+	$(Q) if [ ! -e $(1) -a -e $(2) ] ; then mv -f $(2) $(3) ; fi
 endef
 
 define MVOBJS
@@ -103,13 +101,10 @@ endef
 
 endif
 
-define MOVEOBJ
-endef
-
 # ARCHIVE will move a list of object files into the library.  This is
 # complex because:
 #
-# 1. The ez80lib.exe archive expects the library to reside within the
+# 1. The ZDS-II librarian expects the library to reside within the
 #    current directory; it expects the library argument to a file name
 #    like foo.lib.
 # 2. Normally, the library file is in the current directory, but other
