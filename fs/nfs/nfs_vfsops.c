@@ -66,8 +66,6 @@
 #include <nuttx/fs/dirent.h>
 #include <nuttx/fs/fs.h>
 #include <nuttx/fs/nfs.h>
-#include <nuttx/net/udp.h>
-#include <nuttx/net/arp.h>
 #include <nuttx/net/netconfig.h>
 
 #include <net/if.h>
@@ -304,7 +302,7 @@ static int nfs_filecreate(FAR struct nfsmount *nmp, FAR struct nfsnode *np,
   /* Set the group ID to one */
 
   *ptr++  = nfs_true;            /* True: Gid value follows */
-  *ptr++  = HTONL(1);            /* GID = 1 (nogroup) */
+  *ptr++  = 0;                   /* GID = 0 (nogroup) */
   reqlen += 2*sizeof(uint32_t);
 
   /* Set the size to zero */
@@ -920,13 +918,9 @@ static ssize_t nfs_read(FAR struct file *filep, FAR char *buffer, size_t buflen)
         }
     }
 
-  finfo("Read %d bytes\n", bytesread);
-  nfs_semgive(nmp);
-  return bytesread;
-
 errout_with_semaphore:
   nfs_semgive(nmp);
-  return error;
+  return bytesread > 0 ? bytesread : error;
 }
 
 /****************************************************************************
@@ -1108,12 +1102,9 @@ static ssize_t nfs_write(FAR struct file *filep, FAR const char *buffer,
       buffer       += writesize;
     }
 
-  nfs_semgive(nmp);
-  return byteswritten;
-
 errout_with_semaphore:
   nfs_semgive(nmp);
-  return error;
+  return byteswritten > 0 ? byteswritten : error;
 }
 
 /****************************************************************************
@@ -1301,7 +1292,6 @@ static int nfs_opendir(FAR struct inode *mountpt, FAR const char *relpath,
   DEBUGASSERT(fhandle.length <= DIRENT_NFS_MAXHANDLE);
 
   memcpy(dir->u.nfs.nfs_fhandle, &fhandle.handle, fhandle.length);
-  error = OK;
 
 errout_with_semaphore:
   nfs_semgive(nmp);
@@ -1642,14 +1632,18 @@ static void nfs_decode_args(FAR struct nfs_mount_parameters *nprmt,
 
   /* Get the maximum amount of data that can be transferred in one packet */
 
-  if ((argp->sotype == SOCK_DGRAM) != 0)
+  if (argp->sotype == SOCK_DGRAM)
     {
       maxio = NFS_MAXDGRAMDATA;
     }
   else
     {
-      ferr("ERROR: Only SOCK_DRAM is supported\n");
       maxio = NFS_MAXDATA;
+    }
+
+  if (maxio > MAXBSIZE)
+    {
+      maxio = MAXBSIZE;
     }
 
   /* Get the maximum amount of data that can be transferred in one write transfer */
@@ -1672,11 +1666,6 @@ static void nfs_decode_args(FAR struct nfs_mount_parameters *nprmt,
       nprmt->wsize = maxio;
     }
 
-  if (nprmt->wsize > MAXBSIZE)
-    {
-      nprmt->wsize = MAXBSIZE;
-    }
-
   /* Get the maximum amount of data that can be transferred in one read transfer */
 
   if ((argp->flags & NFSMNT_RSIZE) != 0 && argp->rsize > 0)
@@ -1695,11 +1684,6 @@ static void nfs_decode_args(FAR struct nfs_mount_parameters *nprmt,
   if (nprmt->rsize > maxio)
     {
       nprmt->rsize = maxio;
-    }
-
-  if (nprmt->rsize > MAXBSIZE)
-    {
-      nprmt->rsize = MAXBSIZE;
     }
 
   /* Get the maximum amount of data that can be transferred in directory transfer */
@@ -1780,6 +1764,14 @@ static int nfs_bind(FAR struct inode *blkdriver, FAR const void *data,
       buflen = tmp;
     }
 
+  /* And consider the maximum size of a read dir transfer too */
+
+  tmp = SIZEOF_rpc_reply_readdir(nprmt.readdirsize);
+  if (tmp > buflen)
+    {
+      buflen = tmp;
+    }
+
   /* But don't let the buffer size exceed the MSS of the socket type.
    *
    * In the case where there are multiple network devices with different
@@ -1788,9 +1780,9 @@ static int nfs_bind(FAR struct inode *blkdriver, FAR const void *data,
    * that case.
    */
 
-  if (buflen > MIN_IPv4_UDP_MSS)
+  if (argp->sotype == SOCK_DGRAM && buflen > MIN_UDP_MSS)
     {
-      buflen = MIN_IPv4_UDP_MSS;
+      buflen = MIN_UDP_MSS;
     }
 
   /* Create an instance of the mountpt state structure */
@@ -1832,43 +1824,36 @@ static int nfs_bind(FAR struct inode *blkdriver, FAR const void *data,
   strncpy(nmp->nm_path, argp->path, 90);
   memcpy(&nmp->nm_nam, &argp->addr, argp->addrlen);
 
-  /* Set up the sockets and per-host congestion */
+  /* Create an instance of the rpc state structure */
 
-  if (argp->sotype == SOCK_DGRAM)
+  rpc = (FAR struct rpcclnt *)kmm_zalloc(sizeof(struct rpcclnt));
+  if (!rpc)
     {
-      /* Connection-less... connect now */
-
-      /* Create an instance of the rpc state structure */
-
-      rpc = (FAR struct rpcclnt *)kmm_zalloc(sizeof(struct rpcclnt));
-      if (!rpc)
-        {
-          ferr("ERROR: Failed to allocate rpc structure\n");
-          return -ENOMEM;
-        }
-
-      finfo("Connecting\n");
-
-      /* Translate nfsmnt flags -> rpcclnt flags */
-
-      rpc->rc_path       = nmp->nm_path;
-      rpc->rc_name       = &nmp->nm_nam;
-      rpc->rc_sotype     = argp->sotype;
-      rpc->rc_timeo      = nprmt.timeo;
-      rpc->rc_retry      = nprmt.retry;
-
-      nmp->nm_rpcclnt    = rpc;
-
-      error = rpcclnt_connect(nmp->nm_rpcclnt);
-      if (error != OK)
-        {
-          ferr("ERROR: nfs_connect failed: %d\n", error);
-          goto bad;
-        }
+      ferr("ERROR: Failed to allocate rpc structure\n");
+      return -ENOMEM;
     }
 
-  nmp->nm_fhsize         = nmp->nm_rpcclnt->rc_fhsize;
-  nmp->nm_fh             = &nmp->nm_rpcclnt->rc_fh;
+  finfo("Connecting\n");
+
+  /* Translate nfsmnt flags -> rpcclnt flags */
+
+  rpc->rc_path        = nmp->nm_path;
+  rpc->rc_name        = &nmp->nm_nam;
+  rpc->rc_sotype      = argp->sotype;
+  rpc->rc_timeo       = nprmt.timeo;
+  rpc->rc_retry       = nprmt.retry;
+
+  nmp->nm_rpcclnt     = rpc;
+
+  error = rpcclnt_connect(nmp->nm_rpcclnt);
+  if (error != OK)
+    {
+      ferr("ERROR: nfs_connect failed: %d\n", error);
+      goto bad;
+    }
+
+  nmp->nm_fhsize      = nmp->nm_rpcclnt->rc_fhsize;
+  nmp->nm_fh          = &nmp->nm_rpcclnt->rc_fh;
 
   /* Get the file sytem info */
 
@@ -1888,21 +1873,18 @@ static int nfs_bind(FAR struct inode *blkdriver, FAR const void *data,
   return OK;
 
 bad:
-  if (nmp)
+  /* Disconnect from the server */
+
+  if (nmp->nm_rpcclnt)
     {
-      /* Disconnect from the server */
-
-      if (nmp->nm_rpcclnt)
-        {
-          rpcclnt_disconnect(nmp->nm_rpcclnt);
-          kmm_free(nmp->nm_rpcclnt);
-        }
-
-      /* Free connection-related resources */
-
-      nxsem_destroy(&nmp->nm_sem);
-      kmm_free(nmp);
+      rpcclnt_disconnect(nmp->nm_rpcclnt);
+      kmm_free(nmp->nm_rpcclnt);
     }
+
+  /* Free connection-related resources */
+
+  nxsem_destroy(&nmp->nm_sem);
+  kmm_free(nmp);
 
   return error;
 }
@@ -1949,14 +1931,6 @@ static int nfs_unbind(FAR void *handle, FAR struct inode **blkdriver,
       goto errout_with_semaphore;
     }
 
-  /* No open file... Umount the file system. */
-
-  error = rpcclnt_umount(nmp->nm_rpcclnt);
-  if (error)
-    {
-      ferr("ERROR: rpcclnt_umount failed: %d\n", error);
-    }
-
   /* Disconnect from the server */
 
   rpcclnt_disconnect(nmp->nm_rpcclnt);
@@ -1967,7 +1941,7 @@ static int nfs_unbind(FAR void *handle, FAR struct inode **blkdriver,
   kmm_free(nmp->nm_rpcclnt);
   kmm_free(nmp);
 
-  return error;
+  return OK;
 
 errout_with_semaphore:
   nfs_semgive(nmp);
@@ -2313,7 +2287,7 @@ static int nfs_mkdir(FAR struct inode *mountpt, FAR const char *relpath, mode_t 
   /* Set the group ID to one */
 
   *ptr++  = nfs_true;            /* True: Gid value follows */
-  *ptr++  = HTONL(1);            /* GID = 1 (nogroup) */
+  *ptr++  = 0;                   /* GID = 0 (nogroup) */
   reqlen += 2*sizeof(uint32_t);
 
   /* No size */
