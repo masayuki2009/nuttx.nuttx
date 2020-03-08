@@ -1,22 +1,37 @@
-/****************************************************************************
- *  arch/arm/src/sama5/hardware/_sama5d3x_memorymap.h
+/************************************************************************************
+ * arch/arm/src/sama5/hardware/_sama5d3x_memorymap.h
  *
- *  Licensed to the Apache Software Foundation (ASF) under one or more
- *  contributor license agreements.  See the NOTICE file distributed with
- *  this work for additional information regarding copyright ownership.  The
- *  ASF licenses this file to you under the Apache License, Version 2.0 (the
- *  "License"); you may not use this file except in compliance with the
- *  License.  You may obtain a copy of the License at
+ *   Copyright (C) 2013 Gregory Nutt. All rights reserved.
+ *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- ****************************************************************************/
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ************************************************************************************/
 
 #ifndef __ARCH_ARM_SRC_SAMA5_HARDWARE__SAMA5D3X_MEMORYMAP_H
 #define __ARCH_ARM_SRC_SAMA5_HARDWARE__SAMA5D3X_MEMORYMAP_H
@@ -103,6 +118,7 @@
 #  define SAM_ISI_OFFSET         0x00034000 /* 0x00034000-0x00037fff: ISI */
 #  define SAM_SFR_OFFSET         0x00038000 /* 0x00038000-0x0003bfff: SFR */
                                             /* 0x0003c000-0x07ffffff: Reserved */
+#define SAM_PERIPHB_PSECTION     0xf8000000 /* 0xf8000000-0xffffbfff: Internal Peripherals B */
 #  define SAM_HSMCI1_OFFSET      0x00000000 /* 0x00000000-0x00000fff: HSMCI1 */
 #  define SAM_HSMCI2_OFFSET      0x00004000 /* 0x00004000-0x00007fff: HSMCI2 */
 #  define SAM_SPI1_OFFSET        0x00008000 /* 0x00008000-0x0000bfff: SPI1 */
@@ -121,6 +137,7 @@
 #  define SAM_TDES_OFFSET        0x0003c000 /* 0x0003c000-0x0003ffff: TDES */
 #  define SAM_TRNG_OFFSET        0x00040000 /* 0x00040000-0x00043fff: TRNG */
                                             /* 0x00044000-0x00ffbfff: Reserved */
+#define SAM_SYSC_PSECTION        0xfff00000 /* 0xfff00000-0xffffffff: System Controller */
 #  define SAM_SYSC_PADDR         0xffffc000 /* 0xffffc000-0xffffffff: System Controller */
 #  define SAM_SYSC_OFFSET        0x00000000 /* 0x0fffc000-0x0fffffff: System Controller */
 
@@ -130,6 +147,7 @@
 
 #define SAM_HSMC_OFFSET          0x00000000 /* 0x00000000-0x00000fff: HSMC */
                                             /* 0x00001000-0x000023ff: Reserved */
+#define SAM_FUSE_OFFSET          0x00002400 /* 0x00002400-0x000025ff: FUSE */
 #define SAM_DMAC0_OFFSET         0x00002600 /* 0x00002600-0x000027ff: DMAC0 */
 #define SAM_DMAC1_OFFSET         0x00002800 /* 0x00002800-0x000029ff: DMAC1 */
 #define SAM_MPDDRC_OFFSET        0x00002a00 /* 0x00002a00-0x00002bff: MPDDRC */
@@ -146,11 +164,13 @@
 #define SAM_RSTC_OFFSET          0x00003e00 /* 0x00003e00-0x00003e0f: RSTC */
 #define SAM_SHDC_OFFSET          0x00003e10 /* 0x00003e10-0x00003e1f: SHDC */
                                             /* 0x00003e20-0x00003e2f: Reserved */
+#define SAM_PITC_OFFSET          0x00003e30 /* 0x00003e30-0x00003e3f: PITC */
 #define SAM_WDT_OFFSET           0x00003e40 /* 0x00003e40-0x00003e4f: WDT */
 #define SAM_SCKCR_OFFSET         0x00003e50 /* 0x00003e50-0x00003e53: SCKCR */
 #define SAM_BSC_OFFSET           0x00003e54 /* 0x00003e54-0x00003e5f: BSC */
 #define SAM_GPBR_OFFSET          0x00003e60 /* 0x00003e60-0x00003e6f: GPBR */
                                             /* 0x00003e70-0x00003eaf: Reserved */
+#define SAM_RTCC_OFFSET          0x00003eb0 /* 0x00003eb0-0x00003edf: RTCC */
                                             /* 0x00003ee0-0x00003fff: Reserved */
 
 /* Sizes of memory regions in bytes.
@@ -161,6 +181,7 @@
  */
 
                                                  /* 0x00000000-0x0fffffff: Internal Memories */
+#define SAM_BOOTMEM_SIZE         (1*1024*1024)   /* 0x00000000-0x000fffff: Boot memory */
 #define SAM_ROM_SIZE             (1*1024*1024)   /* 0x00100000-0x001fffff: ROM */
 #define SAM_NFCSRAM_SIZE         (1*1024*1024)   /* 0x00200000-0x002fffff: NFC SRAM */
                                                  /* 0x00300000-0x003fffff: SRAM0 and SRAM1 */
@@ -174,6 +195,7 @@
 #define SAM_DAP_SIZE             (1*1024*1024)   /* 0x00900000-0x009fffff: DAP */
 #define SAM_NFCCR_SIZE           (256*1024*1024) /* 0x70000000-0x7fffffff: NFC Command Registers */
                                                  /* 0xf0000000-0xffffffff: Internal Peripherals */
+#define SAM_PERIPHA_SIZE         (240*1024)      /* 0xf0000000-0xf003bfff: Internal Peripherals */
 #define SAM_PERIPHB_SIZE         (272*1024)      /* 0xf8000000-0xf8043fff: Internal Peripherals */
 #define SAM_SYSC_SIZE            (1*1024*1024)   /* 0xfff00000-0x0ffffedf: Internal Peripherals */
 
@@ -355,8 +377,8 @@
 #define SAM_PERIPH_VSECTION      0xf0000000 /* 0xf0000000-0xffffffff: Internal Peripherals */
 #  define SAM_PERIPHA_VSECTION   0xf0000000 /* 0xf0000000-0xf7ffffff: Internal Peripherals A */
 #  define SAM_PERIPHB_VSECTION   0xf8000000 /* 0xf8000000-0xffefffff: Internal Peripherals B */
-#  define SAM_SYSC_VSECTION      0xf8048000 /* 0xf8048000-0xf8048fff: System Controller */
-#  define SAM_SYSC_VADDR         0xf80fc000 /* 0xf8048000-0xf8048fff: System Controller */
+#  define SAM_SYSC_VSECTION      0xfff00000 /* 0xfff00000-0xffffbfff: System Controller */
+#  define SAM_SYSC_VADDR         0xffffc000 /* 0xffffc000-0xffffffff: System Controller */
 #else
 #define SAM_PERIPH_VSECTION      0xf0000000 /* 0xf0000000-0xffffffff: Internal Peripherals */
 #  define SAM_PERIPHA_VSECTION   0xf0000000 /* 0xf0000000-0xf00fffff: Internal Peripherals A */

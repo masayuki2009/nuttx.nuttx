@@ -1,4 +1,4 @@
-/****************************************************************************
+/********************************************************************************
  * tools/nxstyle.c
  *
  *   Copyright (C) 2015, 2018-2020 Gregory Nutt. All rights reserved.
@@ -31,11 +31,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN  ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ****************************************************************************/
+ ********************************************************************************/
 
-/****************************************************************************
+/********************************************************************************
  * Included Files
- ****************************************************************************/
+ ********************************************************************************/
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -48,9 +48,9 @@
 #include <unistd.h>
 #include <libgen.h>
 
-/****************************************************************************
+/********************************************************************************
  * Pre-processor Definitions
- ****************************************************************************/
+ ********************************************************************************/
 
 #define NXSTYLE_VERSION "0.01"
 
@@ -69,9 +69,9 @@
 #define INFO(m, l, o)  message(INFO, (m), (l), (o))
 #define INFOFL(m, s)   message(INFO, (m), -1, -1)
 
-/****************************************************************************
+/********************************************************************************
  * Private types
- ****************************************************************************/
+ ********************************************************************************/
 
 enum class_e
 {
@@ -118,9 +118,9 @@ struct file_section_s
   uint8_t     ftype;  /* File type where section found */
 };
 
-/****************************************************************************
+/********************************************************************************
  * Private data
- ****************************************************************************/
+ ********************************************************************************/
 
 static char *g_file_name        = "";
 static enum file_e g_file_type  = UNKNOWN;
@@ -184,16 +184,16 @@ static const struct file_section_s g_section_info[] =
   }
 };
 
-/****************************************************************************
+/********************************************************************************
  * Private Functions
- ****************************************************************************/
+ ********************************************************************************/
 
-/****************************************************************************
+/********************************************************************************
  * Name: show_usage
  *
  * Description:
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static void show_usage(char *progname, int exitcode, char *what)
 {
@@ -203,22 +203,24 @@ static void show_usage(char *progname, int exitcode, char *what)
       fprintf(stderr, "%s\n", what);
     }
 
-  fprintf(stderr, "Usage:  %s [-m <excess>] [-v <level>] [-r <start,count>] <filename>\n",
+  fprintf(stderr, "Usage:  %s [-m <excess>] [-v <level>] "
+                  "[-r <start,count>] <filename>\n",
           basename(progname));
   fprintf(stderr, "        %s -h this help\n", basename(progname));
-  fprintf(stderr, "        %s -v <level> where level is\n", basename(progname));
+  fprintf(stderr, "        %s -v <level> where level is\n",
+          basename(progname));
   fprintf(stderr, "                   0 - no output\n");
   fprintf(stderr, "                   1 - PASS/FAIL\n");
   fprintf(stderr, "                   2 - output each line (default)\n");
   exit(exitcode);
 }
 
-/****************************************************************************
+/********************************************************************************
  * Name: skip
  *
  * Description:
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static int skip(int lineno)
 {
@@ -226,7 +228,8 @@ static int skip(int lineno)
 
   for (i = 0; i < g_rangenumber; i++)
     {
-      if (lineno >= g_rangestart[i] && lineno < g_rangestart[i] + g_rangecount[i])
+      if (lineno >= g_rangestart[i] && lineno < g_rangestart[i] +
+          g_rangecount[i])
         {
           return 0;
         }
@@ -235,12 +238,12 @@ static int skip(int lineno)
   return g_rangenumber != 0;
 }
 
-/****************************************************************************
+/********************************************************************************
  * Name: message
  *
  * Description:
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static int message(enum class_e class, const char *text, int lineno, int ndx)
 {
@@ -273,12 +276,12 @@ static int message(enum class_e class, const char *text, int lineno, int ndx)
   return g_status;
 }
 
-/****************************************************************************
+/********************************************************************************
  * Name: check_spaces_left
  *
  * Description:
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static void check_spaces_left(char *line, int lineno, int ndx)
 {
@@ -294,12 +297,12 @@ static void check_spaces_left(char *line, int lineno, int ndx)
     }
 }
 
-/****************************************************************************
+/********************************************************************************
  * Name: check_spaces_leftright
  *
  * Description:
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static void check_spaces_leftright(char *line, int lineno, int ndx1, int ndx2)
 {
@@ -316,13 +319,13 @@ static void check_spaces_leftright(char *line, int lineno, int ndx1, int ndx2)
     }
 }
 
-/****************************************************************************
+/********************************************************************************
  * Name: block_comment_width
  *
  * Description:
  *   Get the width of a block comment
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static int block_comment_width(char *line)
 {
@@ -393,34 +396,40 @@ static int block_comment_width(char *line)
   return 0;
 }
 
-/****************************************************************************
+/********************************************************************************
  * Name: get_line_width
  *
  * Description:
  *   Get the maximum line width by examining the width of the block comments.
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static int get_line_width(FILE *instream)
 {
   char line[LINE_SIZE]; /* The current line being examined */
-  int max = 0;
-  int min = INT_MAX;
+  int max        = 0;
+  int min        = INT_MAX;
+  int lineno     = 0;
+  int lineno_max = 0;
+  int lineno_min = 0;
   int len;
 
   while (fgets(line, LINE_SIZE, instream))
     {
+      lineno++;
       len = block_comment_width(line);
       if (len > 0)
         {
           if (len > max)
             {
               max = len;
+              lineno_max = lineno;
             }
 
           if (len < min)
             {
               min = len;
+              lineno_min = lineno_min;
             }
         }
     }
@@ -432,20 +441,21 @@ static int get_line_width(FILE *instream)
     }
   else if (max != min)
     {
-      ERRORFL("Block comments have different lengths", g_file_name);
+      ERROR("Block comments have different lengths", lineno_max, max);
+      ERROR("Block comments have different lengths", lineno_min, min);
       return DEFAULT_WIDTH;
     }
 
   return min;
 }
 
-/****************************************************************************
+/********************************************************************************
  * Name:  check_section_header
  *
  * Description:
  *   Check if the current line holds a section header
  *
- ****************************************************************************/
+ ********************************************************************************/
 
 static bool check_section_header(const char *line, int lineno)
 {
@@ -473,9 +483,9 @@ static bool check_section_header(const char *line, int lineno)
   return false;
 }
 
-/****************************************************************************
+/********************************************************************************
  * Public Functions
- ****************************************************************************/
+ ********************************************************************************/
 
 int main(int argc, char **argv, char **envp)
 {
@@ -616,7 +626,8 @@ int main(int argc, char **argv, char **envp)
   ppline         = false; /* True: Continuation of a pre-processor line */
   bexternc       = false; /* True: Within 'extern "C"' */
   brhcomment     = false; /* True: Comment to the right of code */
-  prevbrhcmt     = false; /* True: Previous line had comment to the right of code */
+  prevbrhcmt     = false; /* True: Previous line had comment to the right
+                           * of code */
   lineno         = 0;     /* Current line number */
   ncomment       = 0;     /* Comment nesting level on this line */
   bnest          = 0;     /* Brace nesting level on this line */
@@ -636,12 +647,16 @@ int main(int argc, char **argv, char **envp)
       lineno++;
       indent       = 0;
       prevbnest    = bnest;    /* Brace nesting level on the previous line */
-      prevdnest    = dnest;    /* Data declaration nesting level on the previous line */
+      prevdnest    = dnest;    /* Data declaration nesting level on the
+                                * previous line */
       prevncomment = ncomment; /* Comment nesting level on the previous line */
-      bstatm       = false;    /* True: This line is beginning of a statement */
+      bstatm       = false;    /* True: This line is beginning of a
+                                * statement */
       bfor         = false;    /* REVISIT: Implies for() is all on one line */
 
-      /* If we are not in a comment, then this certainly is not a right-hand comment. */
+      /* If we are not in a comment, then this certainly is not a right-hand
+       * comment.
+       */
 
       prevbrhcmt   = brhcomment;
       if (ncomment <= 0)
@@ -700,7 +715,7 @@ int main(int argc, char **argv, char **envp)
                * preceding line has no comment.
                */
 
-              if (line[n] != '}' /* && line[n] != '#' */ && !prevbrhcmt)
+              if (line[n] != '}' && line[n] != '#' && !prevbrhcmt)
                 {
                    ERROR("Missing blank line after comment", comment_lineno,
                          1);
@@ -927,7 +942,9 @@ int main(int argc, char **argv, char **envp)
                   noblank_lineno != lineno - 1 &&
                   !brhcomment)
                 {
-                  /* TODO:  This generates a false alarm if preceded by a label. */
+                  /* TODO:  This generates a false alarm if preceded
+                   * by a label.
+                   */
 
                    ERROR("Missing blank line before comment found", lineno, 1);
                 }
@@ -2217,10 +2234,11 @@ int main(int argc, char **argv, char **envp)
                 {
                   /* REVISIT: Generates false alarms on comments at the end of
                    * the line if there is nothing preceding (such as the aligned
-                   * comments with a structure field definition).  So disabled for
-                   * comments before beginning of function definitions.
+                   * comments with a structure field definition).  So disabled
+                   * for comments before beginning of function definitions.
                    *
-                   * Suppress this error if this is a comment to the right of code.
+                   * Suppress this error if this is a comment to the right of
+                   * code.
                    * Those may be unaligned.
                    */
 
