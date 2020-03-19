@@ -38,7 +38,7 @@ USAGE="USAGE: $0 [options] <board>:<config>"
 ADVICE="Try '$0 --help' for more information"
 
 unset CONFIGS
-silent=n
+debug=n
 defaults=n
 prompt=y
 nocopy=n
@@ -46,10 +46,10 @@ nocopy=n
 while [ ! -z "$1" ]; do
   case $1 in
   --debug )
+    debug=y
     set -x
     ;;
   --silent )
-    silent=y
     defaults=y
     prompt=n
     ;;
@@ -199,11 +199,11 @@ for CONFIG in ${CONFIGS}; do
     exit 1
   fi
 
-  if [ -r $MAKEDEFS1 ]; then
-    MAKEDEFS=$MAKEDEFS1
+  if [ -r $MAKEDEFS2 ]; then
+    MAKEDEFS=$MAKEDEFS2
   else
-    if [ -r $MAKEDEFS2 ]; then
-      MAKEDEFS=$MAKEDEFS2
+    if [ -r $MAKEDEFS1 ]; then
+      MAKEDEFS=$MAKEDEFS1
     else
       echo "No readable Make.defs file at $MAKEDEFS1 or $MAKEDEFS2"
       exit 1
@@ -235,24 +235,36 @@ for CONFIG in ${CONFIGS}; do
     # Then run oldconfig or oldefconfig
 
     if [ "X${defaults}" == "Xy" ]; then
-      make olddefconfig
+      if [ "X${debug}" = "Xy" ]; then
+        make olddefconfig V=1
+      else
+        make olddefconfig 1>/dev/null 2>&1
+      fi
     else
-      make oldconfig
+      if [ "X${debug}" = "Xy" ]; then
+        make oldconfig V=1
+      else
+        make oldconfig
+      fi
     fi
   fi
 
   # Run savedefconfig to create the new defconfig file
 
-  make savedefconfig
-
-  # Show differences
-
-  # sed -i -e "s/^CONFIG_APPS_DIR/# CONFIG_APPS_DIR/g" defconfig
-  $CMPCONFIG $DEFCONFIG defconfig
+  if [ "X${debug}" = "Xy" ]; then
+    make savedefconfig V=1
+  else
+    make savedefconfig 1>/dev/null 2>&1
+  fi
 
   # Save the refreshed configuration
 
   if [ "X${prompt}" == "Xy" ]; then
+
+    # Show differences
+
+    $CMPCONFIG $DEFCONFIG defconfig
+
     read -p "Save the new configuration (y/n)?" -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]
