@@ -33,20 +33,19 @@
 #
 
 progname=$0
-debug=n
 host=
 wenv=
 
 function showusage {
   echo ""
-  echo "USAGE: $progname -d [-l|m|c|u|g|n]"
+  echo "USAGE: $progname [-l|m|c|u|g|n] [make-opts]"
   echo "       $progname -h"
   echo ""
   echo "Where:"
-  echo "  -d enables script debug output"
   echo "  -l|m|c|u|g|n selects Linux (l), macOS (m), Cygwin (c),"
   echo "     Ubuntu under Windows 10 (u), MSYS/MSYS2 (g)"
   echo "     or Windows native (n). Default Linux"
+  echo "  make-opts directly pass to make"
   echo "  -h will show this help test and terminate"
   exit 1
 }
@@ -55,9 +54,6 @@ function showusage {
 
 while [ ! -z "$1" ]; do
   case $1 in
-  -d )
-    debug=y
-    ;;
   -l )
     host=linux
     ;;
@@ -84,7 +80,7 @@ while [ ! -z "$1" ]; do
     showusage
     ;;
   * )
-    break;
+    break
     ;;
   esac
   shift
@@ -116,23 +112,18 @@ if [ -z "$host" ]; then
   esac
 fi
 
-if [ ! -z "$1" ]; then
-  echo "ERROR: Garbage at the end of line"
-  showusage
-fi
-
 WD=`test -d ${0%/*} && cd ${0%/*}; pwd`
 cd $WD
 
 if [ -x sethost.sh ]; then
-  nuttx=$PWD/..
+  cd ..
+fi
+
+if [ -x tools/sethost.sh ]; then
+  nuttx=$PWD
 else
-  if [ -x tools/sethost.sh ]; then
-    nuttx=$PWD
-  else
-    echo "This script must be execute in nuttx/ or nutts/tools directories"
-    exit 1
-  fi
+  echo "This script must be execute in nuttx/ or nutts/tools directories"
+  exit 1
 fi
 
 if [ ! -r $nuttx/.config ]; then
@@ -220,9 +211,4 @@ fi
 sed -i -e "/CONFIG_HOST_OTHER/d" $nuttx/.config
 
 echo "  Refreshing..."
-cd $nuttx || { echo "ERROR: failed to cd to $nuttx"; exit 1; }
-if [ "X${debug}" = "Xy" ]; then
-  make olddefconfig V=1 || { echo "ERROR: failed to refresh"; exit 1; }
-else
-  make olddefconfig 1>/dev/null || { echo "ERROR: failed to refresh"; exit 1; }
-fi
+make olddefconfig $* || { echo "ERROR: failed to refresh"; exit 1; }
