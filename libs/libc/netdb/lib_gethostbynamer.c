@@ -66,37 +66,9 @@
 
 struct hostent_info_s
 {
-  FAR char *hi_addrlist[CONFIG_NETDB_DNSCLIENT_MAXIP + 1];
+  FAR char *hi_addrlist[CONFIG_NETDB_MAX_IPADDR + 1];
   char hi_data[1];
 };
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-/* In the FLAT build, there is a single copy of this global variable that
- * can be accessed from application or OS code.  In the protected and
- * kernel build modes, however, there must be separate copies of OS and
- * users spaces.
- */
-
-#if !defined(CONFIG_BUILD_FLAT) && !defined(__KERNEL__)
-/* Local loopback addresses for user mode */
-
-#ifdef CONFIG_NET_IPv4
-
-const in_addr_t g_lo_ipv4addr = HTONL(0x7f000001);
-
-#else /* CONFIG_NET_IPv6 */
-
-const net_ipv6addr_t g_lo_ipv6addr =
-{
-  HTONS(0), HTONS(0), HTONS(0), HTONS(0),
-  HTONS(0), HTONS(0), HTONS(0), HTONS(1)
-};
-
-#endif
-#endif /* !CONFIG_BUILD_FLAT && !__KERNEL__ */
 
 /****************************************************************************
  * Private functions
@@ -111,8 +83,7 @@ const net_ipv6addr_t g_lo_ipv6addr =
  *   h_addr_list[0] field of the returned hostent structure.
  *
  * Input Parameters:
- *   stream - File stream of the opened hosts file with the file pointer
- *     positioned at the beginning of the next host entry.
+ *   name - The name of the host to find.
  *   host - Caller provided location to return the host data.
  *   buf - Caller provided buffer to hold string data associated with the
  *     host data.
@@ -123,7 +94,8 @@ const net_ipv6addr_t g_lo_ipv6addr =
  *
  ****************************************************************************/
 
-static int lib_numeric_address(FAR const char *name, FAR struct hostent *host,
+static int lib_numeric_address(FAR const char *name,
+                               FAR struct hostent *host,
                                FAR char *buf, size_t buflen)
 {
   FAR struct hostent_info_s *info;
@@ -137,9 +109,9 @@ static int lib_numeric_address(FAR const char *name, FAR struct hostent *host,
    */
 
   if (buflen <= sizeof(struct hostent_info_s))
-   {
-     return -ERANGE;
-   }
+    {
+      return -ERANGE;
+    }
 
   info    = (FAR struct hostent_info_s *)buf;
   ptr     = info->hi_data;
@@ -176,7 +148,7 @@ static int lib_numeric_address(FAR const char *name, FAR struct hostent *host,
           return 1;
         }
 
-      host->h_addrtype  = AF_INET6;
+      host->h_addrtype = AF_INET6;
     }
 
   /* If the address contains a colon, then it might be a numeric IPv6
@@ -207,7 +179,7 @@ static int lib_numeric_address(FAR const char *name, FAR struct hostent *host,
           return 1;
         }
 
-      host->h_addrtype  = AF_INET;
+      host->h_addrtype = AF_INET;
     }
 
   /* No colon?  No period?  Can't be a numeric address */
@@ -247,15 +219,14 @@ static int lib_numeric_address(FAR const char *name, FAR struct hostent *host,
  *   Check if the name is the reserved name for the local loopback device.
  *
  * Input Parameters:
- *   stream - File stream of the opened hosts file with the file pointer
- *     positioned at the beginning of the next host entry.
+ *   name - The name of the host to find.
  *   host - Caller provided location to return the host data.
  *   buf - Caller provided buffer to hold string data associated with the
  *     host data.
  *   buflen - The size of the caller-provided buffer
  *
  * Returned Value:
- *   Zero (0) is returned if the name is an numeric IP address.
+ *   Zero (0) is returned if the name is the loopback device.
  *
  ****************************************************************************/
 
@@ -269,7 +240,7 @@ static int lib_localhost(FAR const char *name, FAR struct hostent *host,
   FAR char *dest;
   int namelen;
 
-  if (strcmp(name, "localhost") == 0)
+  if (strcmp(name, g_lo_hostname) == 0)
     {
       /* Yes.. it is the localhost */
 
@@ -371,9 +342,9 @@ static int lib_find_answer(FAR const char *name, FAR struct hostent *host,
    */
 
   if (buflen <= sizeof(struct hostent_info_s))
-   {
-     return -ERANGE;
-   }
+    {
+      return -ERANGE;
+    }
 
   /* Initialize buffers */
 
@@ -402,7 +373,7 @@ static int lib_find_answer(FAR const char *name, FAR struct hostent *host,
       return ret;
     }
 
-  DEBUGASSERT(naddr <= CONFIG_NETDB_DNSCLIENT_MAXIP);
+  DEBUGASSERT(naddr <= CONFIG_NETDB_MAX_IPADDR);
 
   /* Get the address type. */
 
@@ -413,7 +384,7 @@ static int lib_find_answer(FAR const char *name, FAR struct hostent *host,
       if (((FAR struct sockaddr_in *)ptr)->sin_family == AF_INET)
 #endif
         {
-          addrlen  = sizeof(struct sockaddr_in);
+          addrlen  = sizeof(struct in_addr);
           addrtype = AF_INET;
           addrdata = &((FAR struct sockaddr_in *)ptr)->sin_addr;
         }
@@ -424,7 +395,7 @@ static int lib_find_answer(FAR const char *name, FAR struct hostent *host,
       else
 #endif
         {
-          addrlen  = sizeof(struct sockaddr_in6);
+          addrlen  = sizeof(struct in6_addr);
           addrtype = AF_INET6;
           addrdata = &((FAR struct sockaddr_in6 *)ptr)->sin6_addr;
         }
@@ -533,9 +504,9 @@ static int lib_dns_lookup(FAR const char *name, FAR struct hostent *host,
    */
 
   if (buflen <= sizeof(struct hostent_info_s))
-   {
-     return -ERANGE;
-   }
+    {
+      return -ERANGE;
+    }
 
   /* Initialize buffers */
 
@@ -564,7 +535,7 @@ static int lib_dns_lookup(FAR const char *name, FAR struct hostent *host,
 
   /* We can read more than maximum, limit here. */
 
-  naddr = MIN(naddr, CONFIG_NETDB_DNSCLIENT_MAXIP);
+  naddr = MIN(naddr, CONFIG_NETDB_MAX_IPADDR);
 
   for (i = 0; i < naddr; i++)
     {
@@ -573,7 +544,7 @@ static int lib_dns_lookup(FAR const char *name, FAR struct hostent *host,
       if (((FAR struct sockaddr_in *)ptr)->sin_family == AF_INET)
 #endif
         {
-          addrlen  = sizeof(struct sockaddr_in);
+          addrlen  = sizeof(struct in_addr);
           addrtype = AF_INET;
           addrdata = &((FAR struct sockaddr_in *)ptr)->sin_addr;
         }
@@ -584,7 +555,7 @@ static int lib_dns_lookup(FAR const char *name, FAR struct hostent *host,
       else
 #endif
         {
-          addrlen  = sizeof(struct sockaddr_in6);
+          addrlen  = sizeof(struct in6_addr);
           addrtype = AF_INET6;
           addrdata = &((FAR struct sockaddr_in6 *)ptr)->sin6_addr;
         }
@@ -634,13 +605,15 @@ static int lib_dns_lookup(FAR const char *name, FAR struct hostent *host,
  *   buflen - The size of the caller-provided buffer
  *
  * Returned Value:
- *   Zero (0) is returned if the DNS lookup was successful.
+ *   Zero (0) is returned if the host file lookup was successful.
  *
  ****************************************************************************/
 
 #ifdef CONFIG_NETDB_HOSTFILE
-static int lib_hostfile_lookup(FAR const char *name, FAR struct hostent *host,
-                               FAR char *buf, size_t buflen, int *h_errnop)
+static int lib_hostfile_lookup(FAR const char *name,
+                               FAR struct hostent *host,
+                               FAR char *buf, size_t buflen,
+                               FAR int *h_errnop)
 {
   FAR FILE *stream;
   int herrnocode;
@@ -651,7 +624,7 @@ static int lib_hostfile_lookup(FAR const char *name, FAR struct hostent *host,
   stream = fopen(CONFIG_NETDB_HOSTCONF_PATH, "r");
   if (stream == NULL)
     {
-      int errcode = get_errno();
+      int errcode = -errno;
 
       nerr("ERROR:  Failed to open the hosts file %s: %d\n",
            CONFIG_NETDB_HOSTCONF_PATH, errcode);
@@ -764,8 +737,8 @@ errorout_with_herrnocode:
  *   and its struct in_addr equivalent into the h_addr_list[0] field of the
  *   returned hostent structure.
  *
- *   gethostname_r() is *not* POSIX but is similar to a Glibc extension and is
- *   used internally by NuttX to implement the POSIX gethostname().
+ *   gethostname_r() is *not* POSIX but is similar to a Glibc extension and
+ *   is used internally by NuttX to implement the POSIX gethostname().
  *
  * Input Parameters:
  *   name - The name of the host to find.
@@ -784,10 +757,6 @@ errorout_with_herrnocode:
 int gethostbyname_r(FAR const char *name, FAR struct hostent *host,
                     FAR char *buf, size_t buflen, int *h_errnop)
 {
-#ifdef CONFIG_NETDB_DNSCLIENT
-  int ret;
-#endif
-
   DEBUGASSERT(name != NULL && host != NULL && buf != NULL);
 
   /* Make sure that the h_errno has a non-error code */
@@ -818,14 +787,12 @@ int gethostbyname_r(FAR const char *name, FAR struct hostent *host,
 #endif
 
   /* Try to find the name in the HOSTALIASES environment variable */
-  /* REVISIT: Not implemented */
 
 #ifdef CONFIG_NETDB_DNSCLIENT
 #if CONFIG_NETDB_DNSCLIENT_ENTRIES > 0
   /* Check if we already have this hostname mapping cached */
 
-  ret = lib_find_answer(name, host, buf, buflen);
-  if (ret >= 0)
+  if (lib_find_answer(name, host, buf, buflen) >= 0)
     {
       /* Found the address mapping in the cache */
 
@@ -835,8 +802,7 @@ int gethostbyname_r(FAR const char *name, FAR struct hostent *host,
 
   /* Try to get the host address using the DNS name server */
 
-  ret = lib_dns_lookup(name, host, buf, buflen);
-  if (ret >= 0)
+  if (lib_dns_lookup(name, host, buf, buflen) >= 0)
     {
       /* Successful DNS lookup! */
 
