@@ -418,7 +418,9 @@ struct sam_buffer_s
   int result;                  /* The result of the transfer */
 };
 
-/* This structure describes the state of one receiver or transmitter transport */
+/* This structure describes the state of one receiver or transmitter
+ * transport
+ */
 
 struct sam_transport_s
 {
@@ -578,14 +580,14 @@ static void     ssc_txdma_sampledone(struct sam_ssc_s *priv, int result);
 #endif
 
 #ifdef SSC_HAVE_RX
-static void     ssc_rxdma_timeout(int argc, uint32_t arg);
+static void     ssc_rxdma_timeout(int argc, uint32_t arg, ...);
 static int      ssc_rxdma_setup(struct sam_ssc_s *priv);
 static void     ssc_rx_worker(void *arg);
 static void     ssc_rx_schedule(struct sam_ssc_s *priv, int result);
 static void     ssc_rxdma_callback(DMA_HANDLE handle, void *arg, int result);
 #endif
 #ifdef SSC_HAVE_TX
-static void     ssc_txdma_timeout(int argc, uint32_t arg);
+static void     ssc_txdma_timeout(int argc, uint32_t arg, ...);
 static int      ssc_txdma_setup(struct sam_ssc_s *priv);
 static void     ssc_tx_worker(void *arg);
 static void     ssc_tx_schedule(struct sam_ssc_s *priv, int result);
@@ -1193,7 +1195,7 @@ static void ssc_txdma_sampledone(struct sam_ssc_s *priv, int result)
  ****************************************************************************/
 
 #ifdef SSC_HAVE_RX
-static void ssc_rxdma_timeout(int argc, uint32_t arg)
+static void ssc_rxdma_timeout(int argc, uint32_t arg, ...)
 {
   struct sam_ssc_s *priv = (struct sam_ssc_s *)arg;
   DEBUGASSERT(priv != NULL);
@@ -1271,7 +1273,9 @@ static int ssc_rxdma_setup(struct sam_ssc_s *priv)
 
   do
     {
-      /* Remove the pending RX transfer at the head of the RX pending queue. */
+      /* Remove the pending RX transfer at the head of the RX pending
+       * queue.
+       */
 
       bfcontainer = (struct sam_buffer_s *)sq_remfirst(&priv->rx.pend);
       DEBUGASSERT(bfcontainer && bfcontainer->apb);
@@ -1340,7 +1344,7 @@ static int ssc_rxdma_setup(struct sam_ssc_s *priv)
 
   if (!notimeout)
     {
-      ret = wd_start(priv->rx.dog, timeout, (wdentry_t)ssc_rxdma_timeout,
+      ret = wd_start(priv->rx.dog, timeout, ssc_rxdma_timeout,
                      1, (uint32_t)priv);
 
       /* Check if we have successfully started the watchdog timer.  Note
@@ -1522,7 +1526,9 @@ static void ssc_rx_schedule(struct sam_ssc_s *priv, int result)
 
       bfcontainer->result = result;
 
-      /* Add the completed buffer container to the tail of the rx.done queue */
+      /* Add the completed buffer container to the tail of the rx.done
+       * queue
+       */
 
       sq_addlast((sq_entry_t *)bfcontainer, &priv->rx.done);
     }
@@ -1605,7 +1611,7 @@ static void ssc_rxdma_callback(DMA_HANDLE handle, void *arg, int result)
  ****************************************************************************/
 
 #ifdef SSC_HAVE_TX
-static void ssc_txdma_timeout(int argc, uint32_t arg)
+static void ssc_txdma_timeout(int argc, uint32_t arg, ...)
 {
   struct sam_ssc_s *priv = (struct sam_ssc_s *)arg;
   DEBUGASSERT(priv != NULL);
@@ -1685,7 +1691,9 @@ static int ssc_txdma_setup(struct sam_ssc_s *priv)
 
   do
     {
-      /* Remove the pending TX transfer at the head of the TX pending queue. */
+      /* Remove the pending TX transfer at the head of the TX pending
+       * queue.
+       */
 
       bfcontainer = (struct sam_buffer_s *)sq_remfirst(&priv->tx.pend);
       DEBUGASSERT(bfcontainer && bfcontainer->apb);
@@ -1753,7 +1761,7 @@ static int ssc_txdma_setup(struct sam_ssc_s *priv)
 
   if (!notimeout)
     {
-      ret = wd_start(priv->tx.dog, timeout, (wdentry_t)ssc_txdma_timeout,
+      ret = wd_start(priv->tx.dog, timeout, ssc_txdma_timeout,
                      1, (uint32_t)priv);
 
       /* Check if we have successfully started the watchdog timer.  Note
@@ -1922,7 +1930,9 @@ static void ssc_tx_schedule(struct sam_ssc_s *priv, int result)
 
       bfcontainer->result = result;
 
-      /* Add the completed buffer container to the tail of the tx.done queue */
+      /* Add the completed buffer container to the tail of the tx.done
+       * queue
+       */
 
       sq_addlast((sq_entry_t *)bfcontainer, &priv->tx.done);
     }
