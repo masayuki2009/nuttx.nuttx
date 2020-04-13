@@ -2101,7 +2101,7 @@ static ssize_t hciuart_read(const struct btuart_lowerhalf_s *lower,
                   ret = nxsem_wait_uninterruptible(&state->rxwait);
                   if (ret < 0)
                     {
-                      ntotal == (ssize_t)ret;
+                      ntotal = (ssize_t)ret;
                       break;
                     }
                 }
@@ -2288,7 +2288,7 @@ static ssize_t hciuart_write(const struct btuart_lowerhalf_s *lower,
         }
     }
 
-  /* If the Tx buffer is not empty, then exit with the Tx interrupts enabled. */
+  /* If Tx buffer is not empty, then exit with Tx interrupts enabled. */
 
   if (state->txhead != state->txtail)
     {

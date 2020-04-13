@@ -38,7 +38,7 @@
  *
  * See "GS2200MS2W Adapter Command Reference Guide" for the explanation
  * of AT commands. You can find the document at:
- * https://www.telit.com/m2m-iot-products/wifi-bluetooth-modules/wi-fi-gs2200m/
+ * https://telit.com/m2m-iot-products/wifi-bluetooth-modules/wi-fi-gs2200m/
  *
  ****************************************************************************/
 
@@ -724,7 +724,7 @@ static ssize_t gs2200m_read(FAR struct file *filep, FAR char *buffer,
 
   ASSERT(1 == len);
 
-  ret = nxsem_wait(dev);
+  ret = nxsem_wait(&dev->dev_sem);
   if (ret < 0)
     {
       /* Return if a signal is received or if the the task was canceled
