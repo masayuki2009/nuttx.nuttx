@@ -1,5 +1,5 @@
 /****************************************************************************
- * libs/libc/modlib/modlib_iobuffer.c
+ * libs/libc/modlib/modlib_loadshdrs.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,8 +24,9 @@
 
 #include <nuttx/config.h>
 
-#include <debug.h>
+#include <assert.h>
 #include <errno.h>
+#include <debug.h>
 
 #include <nuttx/lib/modlib.h>
 
@@ -33,15 +34,18 @@
 #include "modlib/modlib.h"
 
 /****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: modlib_allocbuffer
+ * Name: modlib_loadshdrs
  *
  * Description:
- *   Perform the initial allocation of the I/O buffer, if it has not already
- *   been allocated.
+ *   Loads section headers into memory.
  *
  * Returned Value:
  *   0 (OK) is returned on success and a negated errno is returned on
@@ -49,62 +53,49 @@
  *
  ****************************************************************************/
 
-int modlib_allocbuffer(FAR struct mod_loadinfo_s *loadinfo)
+int modlib_loadshdrs(FAR struct mod_loadinfo_s *loadinfo)
 {
-  /* Has a buffer been allocated> */
+  size_t shdrsize;
+  int ret;
 
-  if (!loadinfo->iobuffer)
+  DEBUGASSERT(loadinfo->shdr == NULL);
+
+  /* Verify that there are sections */
+
+  if (loadinfo->ehdr.e_shnum < 1)
     {
-      /* No.. allocate one now */
-
-      loadinfo->iobuffer = (FAR uint8_t *)
-                           lib_malloc(CONFIG_MODLIB_BUFFERSIZE);
-      if (!loadinfo->iobuffer)
-        {
-          berr("ERROR: Failed to allocate an I/O buffer\n");
-          return -ENOMEM;
-        }
-
-      loadinfo->buflen = CONFIG_MODLIB_BUFFERSIZE;
+      berr("ERROR: No sections(?)\n");
+      return -EINVAL;
     }
 
-  return OK;
-}
+  /* Get the total size of the section header table */
 
-/****************************************************************************
- * Name: modlib_reallocbuffer
- *
- * Description:
- *   Increase the size of I/O buffer by the specified buffer increment.
- *
- * Returned Value:
- *   0 (OK) is returned on success and a negated errno is returned on
- *   failure.
- *
- ****************************************************************************/
-
-int modlib_reallocbuffer(FAR struct mod_loadinfo_s *loadinfo,
-                         size_t increment)
-{
-  FAR void *buffer;
-  size_t newsize;
-
-  /* Get the new size of the allocation */
-
-  newsize = loadinfo->buflen + increment;
-
-  /* And perform the reallocation */
-
-  buffer = lib_realloc((FAR void *)loadinfo->iobuffer, newsize);
-  if (!buffer)
+  shdrsize = (size_t)loadinfo->ehdr.e_shentsize *
+             (size_t)loadinfo->ehdr.e_shnum;
+  if (loadinfo->ehdr.e_shoff + shdrsize > loadinfo->filelen)
     {
-      berr("ERROR: Failed to reallocate the I/O buffer\n");
+      berr("ERROR: Insufficent space in file for section header table\n");
+      return -ESPIPE;
+    }
+
+  /* Allocate memory to hold a working copy of the sector header table */
+
+  loadinfo->shdr = (FAR FAR Elf_Shdr *)lib_malloc(shdrsize);
+  if (!loadinfo->shdr)
+    {
+      berr("ERROR: Failed to allocate the section header table. Size: %ld\n",
+           (long)shdrsize);
       return -ENOMEM;
     }
 
-  /* Save the new buffer info */
+  /* Read the section header table into memory */
 
-  loadinfo->iobuffer = buffer;
-  loadinfo->buflen   = newsize;
-  return OK;
+  ret = modlib_read(loadinfo, (FAR uint8_t *)loadinfo->shdr, shdrsize,
+                    loadinfo->ehdr.e_shoff);
+  if (ret < 0)
+    {
+      berr("ERROR: Failed to read section header table: %d\n", ret);
+    }
+
+  return ret;
 }
