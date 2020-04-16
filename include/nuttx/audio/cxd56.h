@@ -1,7 +1,7 @@
 /****************************************************************************
- * boards/arm/cxd56xx/drivers/audio/cxd56_audio_digital.c
+ * include/nuttx/audio/cxd56.h
  *
- *   Copyright 2018 Sony Semiconductor Solutions Corporation
+ *   Copyright 2019 Sony Semiconductor Solutions Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -13,10 +13,9 @@
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- * 3. Neither the name of Sony Semiconductor Solutions Corporation nor
- *    the names of its contributors may be used to endorse or promote
- *    products derived from this software without specific prior written
- *    permission.
+ * 3. Neither the name NuttX nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -33,63 +32,54 @@
  *
  ****************************************************************************/
 
+#ifndef __INCLUDE_NUTTX_AUDIO_CXD56_H
+#define __INCLUDE_NUTTX_AUDIO_CXD56_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-#include <arch/chip/audio.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-#include "cxd56_audio_config.h"
-#include "cxd56_audio_ac_reg.h"
-#include "cxd56_audio_bca_reg.h"
-#include "cxd56_audio_digital.h"
+#include <nuttx/irq.h>
+
+#if defined(CONFIG_AUDIO_CXD56) || defined(CONFIG_CXD56_AUDIO)
 
 /****************************************************************************
- * Public Functions
+ * Public Types
  ****************************************************************************/
 
-void cxd56_audio_digital_poweron(void)
+struct cxd56_lower_s
 {
-#if defined(CONFIG_CXD56_I2S0) || defined(CONFIG_CXD56_I2S1)
-  cxd56_audio_clkmode_t clk_mode = cxd56_audio_config_get_clkmode();
+  int dma_handle;
+};
 
-  /* Clear interrupt status of bck_err. */
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
 
-  cxd56_audio_bca_reg_clear_bck_err_int();
-
-  /* PowerON i2s. */
-
-  cxd56_audio_ac_reg_poweron_i2s(clk_mode);
-#endif /* defined(CONFIG_CXD56_I2S0) || defined(CONFIG_CXD56_I2S1) */
-}
-
-void cxd56_audio_digital_enable(void)
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C"
 {
-#if defined(CONFIG_CXD56_I2S0) || defined(CONFIG_CXD56_I2S1)
+#else
+#define EXTERN extern
+#endif
 
-#ifdef CONFIG_CXD56_I2S0
-  /* Enable I2S data input and output of SRC1 */
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
 
-  cxd56_audio_ac_reg_enable_i2s_src1();
-#endif /* CONFIG_CXD56_I2S0 */
+struct audio_lowerhalf_s;
 
-#ifdef CONFIG_CXD56_I2S1
-  /* Enable I2S data input and output of SRC2 */
+FAR struct audio_lowerhalf_s *
+  cxd56_initialize(FAR const struct cxd56_lower_s *lower);
 
-  cxd56_audio_ac_reg_enable_i2s_src2();
-#endif /* CONFIG_CXD56_I2S1 */
-
-  if ((CXD56_AUDIO_CFG_I2S1_MODE == CXD56_AUDIO_CFG_I2S_MODE_MASTER) ||
-      (CXD56_AUDIO_CFG_I2S2_MODE == CXD56_AUDIO_CFG_I2S_MODE_MASTER))
-    {
-      /* Enable BCK, LRCK output. */
-
-      cxd56_audio_ac_reg_enable_i2s_bcklrckout();
-    }
-  else
-    {
-      cxd56_audio_ac_reg_disable_i2s_bcklrckout();
-    }
-#endif /* defined(CONFIG_CXD56_I2S0) || defined(CONFIG_CXD56_I2S1) */
+#undef EXTERN
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* CONFIG_CXD56_AUDIO */
+#endif /* __INCLUDE_NUTTX_AUDIO_CXD56_H */
