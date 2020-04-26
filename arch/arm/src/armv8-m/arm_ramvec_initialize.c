@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/armv7-m/up_ramvec_initialize.c
+ * arch/arm/src/armv8-m/arm_ramvec_initialize.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -43,22 +43,22 @@
  ****************************************************************************/
 
 /* Vector Table Offset Register (VECTAB).  This mask seems to vary among
- * ARMv7-M implementations.  It may need to be redefined in some
+ * ARMv8-M implementations.  It may need to be redefined in some
  * architecture-specific header file. By default, the base address of the
  * new vector table must be aligned to the size of the vector table extended
  * to the next larger power of 2.
  */
 
 #ifndef NVIC_VECTAB_TBLOFF_MASK
-#  if ARMV7M_VECTAB_SIZE > 512
+#  if ARMV8M_VECTAB_SIZE > 512
 #    define NVIC_VECTAB_TBLOFF_MASK     (0xfffff000)
-#  elif ARMV7M_VECTAB_SIZE > 256
+#  elif ARMV8M_VECTAB_SIZE > 256
 #    define NVIC_VECTAB_TBLOFF_MASK     (0xfffff800)
-#  elif ARMV7M_VECTAB_SIZE > 128
+#  elif ARMV8M_VECTAB_SIZE > 128
 #    define NVIC_VECTAB_TBLOFF_MASK     (0xfffffc00)
-#  elif ARMV7M_VECTAB_SIZE > 64
+#  elif ARMV8M_VECTAB_SIZE > 64
 #    define NVIC_VECTAB_TBLOFF_MASK     (0xfffffe00)
-#  elif ARMV7M_VECTAB_SIZE > 32
+#  elif ARMV8M_VECTAB_SIZE > 32
 #    define NVIC_VECTAB_TBLOFF_MASK     (0xffffff00)
 #  else
 #    define NVIC_VECTAB_TBLOFF_MASK     (0xffffff80)
@@ -67,7 +67,7 @@
 
 /* Alignment ****************************************************************/
 
-/* Per the ARMv7M Architecture reference manual, the NVIC vector table
+/* Per the ARMv8M Architecture reference manual, the NVIC vector table
  * requires 7-bit address alignment (i.e, bits 0-6 of the address of the
  * vector table must be zero).  In this case alignment to a 128 byte address
  * boundary is sufficient.
@@ -86,7 +86,7 @@
  ****************************************************************************/
 
 /* If CONFIG_ARCH_RAMVECTORS is defined, then the ARM logic must provide
- * ARM-specific implementations of up_ramvec_initialize(), irq_attach(), and
+ * ARM-specific implementations of arm_ramvec_initialize(), irq_attach(), and
  * irq_dispatch.  In this case, it is also assumed that the ARM vector
  * table resides in RAM, has the name g_ram_vectors, and has been
  * properly positioned and aligned in memory by the linker script.
@@ -97,7 +97,7 @@
  * the highest alignment possible.
  */
 
-up_vector_t g_ram_vectors[ARMV7M_VECTAB_SIZE]
+up_vector_t g_ram_vectors[ARMV8M_VECTAB_SIZE]
   __attribute__ ((section (".ram_vectors"), aligned (RAMVEC_ALIGN)));
 
 /****************************************************************************
@@ -105,14 +105,14 @@ up_vector_t g_ram_vectors[ARMV7M_VECTAB_SIZE]
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_ramvec_initialize
+ * Name: arm_ramvec_initialize
  *
  * Description:
  *   Copy vectors to RAM an configure the NVIC to use the RAM vectors.
  *
  ****************************************************************************/
 
-void up_ramvec_initialize(void)
+void arm_ramvec_initialize(void)
 {
   const up_vector_t *src;
   up_vector_t *dest;
@@ -133,7 +133,7 @@ void up_ramvec_initialize(void)
 
   irqinfo("src=%p dest=%p\n", src, dest);
 
-  for (i = 0; i < ARMV7M_VECTAB_SIZE; i++)
+  for (i = 0; i < ARMV8M_VECTAB_SIZE; i++)
     {
       *dest++ = *src++;
     }

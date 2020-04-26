@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/armv7-m/ram_vectors.h
+ * arch/arm/src/armv8-m/gnu/arm_testset.S
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,86 +18,91 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_COMMON_ARMV7_M_RAM_VECTORS_H
-#define __ARCH_ARM_SRC_COMMON_ARMV7_M_RAM_VECTORS_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include <arch/irq.h>
+#include <arch/spinlock.h>
 
-#include "up_internal.h"
-#include "chip.h"
-
-#ifdef CONFIG_ARCH_RAMVECTORS
+	.syntax		unified
+	.thumb
+	.file	"arm_testset.S"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* This is the size of the vector table (in 4-byte entries).  This size
- * includes the (1) the peripheral interrupts, (2) space for 15 Cortex-M
- * exceptions, and (3) IDLE stack pointer which lies at the beginning of the
- * table.
- */
-
-#define ARMV7M_VECTAB_SIZE (ARMV7M_PERIPHERAL_INTERRUPTS + 16)
-
 /****************************************************************************
- * Public Data
+ * Public Symbols
  ****************************************************************************/
 
-/* If CONFIG_ARCH_RAMVECTORS is defined, then the ARM logic must provide
- * ARM-specific implementations of irq_initialize(), irq_attach(), and
- * irq_dispatch.  In this case, it is also assumed that the ARM vector
- * table resides in RAM, has the name g_ram_vectors, and has been
- * properly positioned and aligned in memory by the linker script.
- *
- * REVISIT: Can this alignment requirement vary from core-to-core?  Yes, it
- * depends on the number of vectors supported by the MCU. The safest thing
- * to do is to put the vector table at the beginning of RAM in order toforce
- * the highest alignment possible.
- */
-
-extern up_vector_t g_ram_vectors[ARMV7M_VECTAB_SIZE]
-  __attribute__ ((section (".ram_vectors"), aligned (128)));
+	.globl	up_testset
 
 /****************************************************************************
- * Public Function Prototypes
+ * Assembly Macros
  ****************************************************************************/
 
 /****************************************************************************
- * Name: up_ramvec_initialize
+ * Private Functions
+ ****************************************************************************/
+
+	.text
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: up_testset
  *
  * Description:
- *   Copy vectors to RAM an configure the NVIC to use the RAM vectors.
+ *   Perform an atomic test and set operation on the provided spinlock.
+ *
+ *   This function must be provided via the architecture-specific logic.
+ *
+ * Input Parameters:
+ *   lock - The address of spinlock object.
+ *
+ * Returned Value:
+ *   The spinlock is always locked upon return.  The value of previous value
+ *   of the spinlock variable is returned, either SP_LOCKED if the spinlock
+ *   as previously locked (meaning that the test-and-set operation failed to
+ *   obtain the lock) or SP_UNLOCKED if the spinlock was previously unlocked
+ *   (meaning that we successfully obtained the lock)
  *
  ****************************************************************************/
 
-void up_ramvec_initialize(void);
+	.globl	up_testset
+	.type	up_testset, %function
 
-/****************************************************************************
- * Name: exception_common
- *
- * Description:
- *   This is the default, common vector handling entrypoint.
- *
- ****************************************************************************/
+up_testset:
 
-void exception_common(void);
+	mov		r1, #SP_LOCKED
 
-/****************************************************************************
- * Name: up_ramvec_attach
- *
- * Description:
- *   Configure the ram vector table so that IRQ number 'irq' will be
- *   dipatched by hardware to 'vector'
- *
- ****************************************************************************/
+	/* Test if the spinlock is locked or not */
 
-int up_ramvec_attach(int irq, up_vector_t vector);
+1:
+	ldrexb	r2, [r0]			/* Test if spinlock is locked or not */
+	cmp		r2, r1				/* Already locked? */
+	beq		2f					/* If already locked, return SP_LOCKED */
 
-#endif /* CONFIG_ARCH_RAMVECTORS */
-#endif /* __ARCH_ARM_SRC_COMMON_ARMV7_M_RAM_VECTORS_H */
+	/* Not locked ... attempt to lock it */
+
+	strexb	r2, r1, [r0]		/* Attempt to set the locked state */
+	cmp		r2, r1				/* r2 will be 1 is strexb failed */
+	beq		1b					/* Failed to lock... try again */
+
+	/* Lock acquired -- return SP_UNLOCKED */
+
+	dmb							/* Required before accessing protected resource */
+	mov		r0, #SP_UNLOCKED
+	bx		lr
+
+	/* Lock not acquired -- return SP_LOCKED */
+
+2:
+	mov		r0, #SP_LOCKED
+	bx		lr
+	.size	up_testset, . - up_testset
+	.end
