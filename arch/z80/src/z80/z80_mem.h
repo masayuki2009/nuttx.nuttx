@@ -1,8 +1,7 @@
 /************************************************************************************
- * arch/z80/src/z8/up_mem.h
- * arch/z80/src/chip/up_mem.h
+ * arch/z80/src/common/sdcc.h
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2012 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,56 +33,43 @@
  *
  ************************************************************************************/
 
-#ifndef __ARCH_Z80_SRC_Z8_UP_MEM_H
-#define __ARCH_Z80_SRC_Z8_UP_MEM_H
+#ifndef __ARCH_Z80_SRC_COMMON_Z80_MEM_H
+#define __ARCH_Z80_SRC_COMMON_Z80_MEM_H
 
 /************************************************************************************
  * Included Files
  ************************************************************************************/
 
-#include <stdint.h>
+#include <nuttx/config.h>
 
 /************************************************************************************
  * Pre-processor Definitions
  ************************************************************************************/
 
-/* For the ZiLOG ZDS-II toolchain(s), the heap will be set using linker-
- * defined values:
- *
- *   far_heapbot  : set to the offset to the first unused value in EDATA
- *   far_stacktop : set to the highest address in EDATA
- *
- * The top of the heap is then determined by the amount of stack setaside
- * in the NuttX configuration file
+/* Locate the IDLE thread stack at the end of RAM. */
+
+#define CONFIG_STACK_END   CONFIG_RAM_SIZE
+#define CONFIG_STACK_BASE  (CONFIG_STACK_END - CONFIG_IDLETHREAD_STACKSIZE)
+
+/* The heap then extends from the linker determined beginning of the heap (s__HEAP).
+ * to the bottom of the IDLE thread stack.  NOTE:  The symbol s__HEAP is not
+ * accessible from C because it does not begin with the _ character.  g_heapbase
+ * is defined in z80_head.asm to provide that value to the C code.
  */
 
-#ifndef CONFIG_HEAP1_BASE
-   extern far unsigned long far_heapbot;
-#  define CONFIG_HEAP1_BASE ((uint16_t)&far_heapbot)
-#endif
-
-#ifndef CONFIG_HEAP1_END
-   extern far unsigned long far_stacktop;
-#  define CONFIG_HEAP1_END (((uint16_t)&far_stacktop) - CONFIG_IDLETHREAD_STACKSIZE + 1)
-#endif
+#define CONFIG_HEAP1_END   CONFIG_STACK_BASE
+#define CONFIG_HEAP1_BASE  g_heapbase
 
 /************************************************************************************
- * Public Function Prototypes
+ * Public variables
  ************************************************************************************/
 
-#ifndef __ASSEMBLY__
-#ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
-#endif
+/* This is the bottom of the heap as provided by the linker symbol s__HEAP. NOTE:
+ * The symbol s__HEAP is not accessible from C because it does not begin with the _
+ * character.  g_heapbase is defined in z80_head.asm to provide that value to the C
+ * code.
+ */
 
-#undef EXTERN
-#ifdef __cplusplus
-}
-#endif
-#endif
+extern const uint16_t g_heapbase;
 
-#endif /* __ARCH_Z80_SRC_Z8_UP_MEM_H */
+#endif /* __ARCH_Z80_SRC_COMMON_Z80_MEM_H */
