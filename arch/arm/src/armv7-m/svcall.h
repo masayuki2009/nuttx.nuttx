@@ -62,7 +62,7 @@
 
 /* SYS call 0:
  *
- * int up_saveusercontext(uint32_t *saveregs);
+ * int arm_saveusercontext(uint32_t *saveregs);
  */
 
 #define SYS_save_context          (0)
@@ -76,7 +76,7 @@
 
 /* SYS call 2:
  *
- * void up_switchcontext(uint32_t *saveregs, uint32_t *restoreregs);
+ * void arm_switchcontext(uint32_t *saveregs, uint32_t *restoreregs);
  */
 
 #define SYS_switch_context        (2)

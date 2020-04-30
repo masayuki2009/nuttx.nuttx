@@ -1,5 +1,5 @@
 /************************************************************************************
- * arch/arm/src/armv7-m/gnu/up_saveusercontext.S
+ * arch/arm/src/armv6-m/arm_switchcontext.S
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,9 +36,8 @@
  * Public Symbols
  ************************************************************************************/
 
-	.syntax	unified
-	.thumb
-	.file	"up_saveusercontext.S"
+	.cpu	cortex-m0
+	.file	"arm_switchcontext.S"
 
 /************************************************************************************
  * Macros
@@ -49,40 +48,35 @@
  ************************************************************************************/
 
 /************************************************************************************
- * Name: up_saveusercontext
+ * Name: arm_switchcontext
  *
  * Description:
- *   Save the current thread context.  Full prototype is:
+ *   Save the current thread context and restore the specified context.
+ *   Full prototype is:
  *
- *   int  up_saveusercontext(uint32_t *saveregs);
+ *   void arm_switchcontext(uint32_t *saveregs, uint32_t *restoreregs);
  *
  * Returned Value:
- *   0: Normal return
- *   1: Context switch return
+ *   None
  *
  ************************************************************************************/
 
-	.text
+	.align	2
+	.code	16
 	.thumb_func
-	.globl	up_saveusercontext
-	.type	up_saveusercontext, function
-up_saveusercontext:
+	.globl	arm_switchcontext
+	.type	arm_switchcontext, function
+arm_switchcontext:
 
-	/* Perform the System call with R0=0 and R1=regs */
+	/* Perform the System call with R0=1, R1=saveregs, R2=restoreregs */
 
-	mov		r1, r0					/* R1: regs */
-	mov		r0, #SYS_save_context	/* R0: save context (also return value) */
+	mov		r2, r1					/* R2: restoreregs */
+	mov		r1, r0					/* R1: saveregs */
+	mov		r0, #SYS_switch_context	/* R0: context switch */
 	svc		0						/* Force synchronous SVCall (or Hard Fault) */
 
-	/* There are two return conditions.  On the first return, R0 (the
-	 * return value will be zero.  On the second return we need to
-	 * force R0 to be 1.
-	 */
+	/*  We will get here only after the rerturn from the context switch */
 
-	add		r2, r1, #(4*REG_R0)
-	mov		r3, #1
-	str		r3, [r2, #0]
-	bx		lr						/* "normal" return with r0=0 or
-									 * context switch with r0=1 */
-	.size	up_saveusercontext, .-up_saveusercontext
+	bx		lr
+	.size	arm_switchcontext, .-arm_switchcontext
 	.end

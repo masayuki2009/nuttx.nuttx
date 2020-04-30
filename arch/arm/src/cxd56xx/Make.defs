@@ -37,7 +37,7 @@
 
 HEAD_ASRC  =
 
-CMN_ASRCS  = up_saveusercontext.S arm_fullcontextrestore.S up_switchcontext.S
+CMN_ASRCS  = arm_saveusercontext.S arm_fullcontextrestore.S arm_switchcontext.S
 CMN_ASRCS += up_testset.S vfork.S
 
 ifeq ($(CONFIG_ARCH_SETJMP_H),y)
@@ -46,7 +46,7 @@ CMN_ASRCS += up_setjmp.S
 endif
 endif
 
-CMN_CSRCS  = up_assert.c up_blocktask.c up_copyfullstate.c
+CMN_CSRCS  = up_assert.c up_blocktask.c arm_copyfullstate.c
 CMN_CSRCS += up_createstack.c up_mdelay.c up_udelay.c up_exit.c
 CMN_CSRCS += up_initialize.c up_initialstate.c up_interruptcontext.c
 CMN_CSRCS += up_memfault.c up_modifyreg8.c up_modifyreg16.c up_modifyreg32.c
@@ -83,9 +83,9 @@ endif
 ifeq ($(CONFIG_ARCH_FPU),y)
 CMN_ASRCS += up_fpu.S
 ifneq ($(CONFIG_ARMV7M_CMNVECTOR),y)
-CMN_CSRCS += up_copyarmstate.c
+CMN_CSRCS += arm_copyarmstate.c
 else ifeq ($(CONFIG_ARMV7M_LAZYFPU),y)
-CMN_CSRCS += up_copyarmstate.c
+CMN_CSRCS += arm_copyarmstate.c
 endif
 endif
 

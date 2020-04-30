@@ -148,13 +148,13 @@ void up_reprioritize_rtr(struct tcb_s *tcb, uint8_t priority)
               up_restorestate(rtcb->xcp.regs);
             }
 
-          /* Copy the exception context into the TCB at the (old) head of the
-           * ready-to-run Task list. if up_saveusercontext returns a non-zero
-           * value, then this is really the previously running task
+          /* Copy the exception context into the TCB at the (old) head of
+           * the ready-to-run Task list. if arm_saveusercontext returns a
+           * non-zero value, then this is really the previously running task
            * restarting!
            */
 
-          else if (!up_saveusercontext(rtcb->xcp.regs))
+          else if (!arm_saveusercontext(rtcb->xcp.regs))
             {
               /* Restore the exception context of the rtcb at the (new) head
                * of the ready-to-run task list.

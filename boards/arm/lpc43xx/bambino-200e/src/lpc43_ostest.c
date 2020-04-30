@@ -3,7 +3,7 @@
  *
  *   Copyright (C) 2016 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
- *           Alan Carvalho de Assis acassis@gmail.com [nuttx] <nuttx@googlegroups.com>
+ *           Alan Carvalho de Assis <acassis@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -91,7 +91,7 @@ void arch_getfpu(FAR uint32_t *fpusave)
   /* Take a snapshot of the thread context right now */
 
   flags = enter_critical_section();
-  up_saveusercontext(g_saveregs);
+  arm_saveusercontext(g_saveregs);
 
   /* Return only the floating register values */
 
