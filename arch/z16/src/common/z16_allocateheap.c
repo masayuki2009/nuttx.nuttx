@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/z16/z16f/z16f2800100zcog/z16f_leds.c
+ * arch/z16/src/common/z16_allocateheap.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,75 +18,72 @@
  *
  ****************************************************************************/
 
-/* The z16f2800100zcog board has four LEDs:
- *
- * - Green LED D1 which illuminates in the presence of Vcc
- * - Red LED D2 connected to chip port PA0_T0IN
- * - Yellow LED D3 connected to chip port PA1_T0OUT
- * - Green LED D4 connected to chip port PA2_DE0
- */
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
+#include <sys/types.h>
+#include <debug.h>
+
+#include <nuttx/arch.h>
 #include <nuttx/board.h>
+#include <nuttx/kmalloc.h>
 #include <arch/board/board.h>
 
+#include "chip.h"
 #include "z16_internal.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/****************************************************************************
- * Private Data
- ****************************************************************************/
+/* Use ZDS-II linker settings to get the unused external RAM and use this
+ * for the NuttX heap.
+ */
 
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
+#ifndef CONFIG_HEAP1_BASE
+  extern _Far unsigned long far_heapbot;
+  #define CONFIG_HEAP1_BASE ((unsigned long)&far_heapbot)
+#endif
+
+#ifndef CONFIG_HEAP1_END
+  extern _Far unsigned long far_heaptop;
+  #define CONFIG_HEAP1_END ((unsigned long)&far_heaptop)
+#endif
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: board_autoled_initialize
+ * Name: up_allocate_heap
+ *
+ * Description:
+ *   This function will be called to dynamically set aside the heap region.
+ *
  ****************************************************************************/
 
-#ifdef CONFIG_ARCH_LEDS
-void board_autoled_initialize(void)
+void up_allocate_heap(FAR void **heap_start, size_t *heap_size)
 {
-  /* The following is performed up_board_initialize() as well */
-
-  putreg8(getreg8(Z16F_GPIOA_OUT) | 0x07, Z16F_GPIOA_OUT);
-  putreg8(getreg8(Z16F_GPIOA_DD) & 0xf8, Z16F_GPIOA_DD);
+  *heap_start = (FAR void *)CONFIG_HEAP1_BASE;
+  *heap_size = CONFIG_HEAP1_END - CONFIG_HEAP1_BASE;
+  board_autoled_on(LED_HEAPALLOCATE);
 }
 
 /****************************************************************************
- * Name: board_autoled_on
+ * Name: z16_addregions
+ *
+ * Description:
+ *   Memory may be added in non-contiguous chunks.  Additional chunks are
+ *   added by calling this function.
+ *
  ****************************************************************************/
 
-void board_autoled_on(int led)
+#if CONFIG_MM_REGIONS > 1
+void z16_addregion(void)
 {
-  if ((unsigned)led <= 7)
-    {
-       putreg8(((getreg8(Z16F_GPIOA_OUT) & 0xf8) | led), Z16F_GPIOA_OUT);
-    }
+  kmm_addregion((FAR void *)CONFIG_HEAP2_BASE, CONFIG_HEAP2_SIZE);
 }
-
-/****************************************************************************
- * Name: board_autoled_off
- ****************************************************************************/
-
-void board_autoled_off(int led)
-{
-  if (led >= 1)
-    {
-      board_autoled_on(led - 1);
-    }
-}
-#endif /* CONFIG_ARCH_LEDS */
+#endif

@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/z16/z16f/z16f2800100zcog/z16f_leds.c
+ * arch/z16/src/common/z16_stackdump.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,75 +18,65 @@
  *
  ****************************************************************************/
 
-/* The z16f2800100zcog board has four LEDs:
- *
- * - Green LED D1 which illuminates in the presence of Vcc
- * - Red LED D2 connected to chip port PA0_T0IN
- * - Yellow LED D3 connected to chip port PA1_T0OUT
- * - Green LED D4 connected to chip port PA2_DE0
- */
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
-#include <nuttx/board.h>
-#include <arch/board/board.h>
+#include <debug.h>
 
+#include "chip.h"
+#include "sched/sched.h"
 #include "z16_internal.h"
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
+#ifdef CONFIG_ARCH_STACKDUMP
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Public Functions
+ * Name: z16_getsp
  ****************************************************************************/
+
+/* To be provided */
 
 /****************************************************************************
- * Name: board_autoled_initialize
+ * Name: z16_stackdump
  ****************************************************************************/
 
-#ifdef CONFIG_ARCH_LEDS
-void board_autoled_initialize(void)
+static void z16_stackdump(void)
 {
-  /* The following is performed up_board_initialize() as well */
+  struct tcb_s *rtcb = this_task();
+  chipreg_t sp = z16_getsp();
+  chipreg_t stack_base = (chipreg_t)rtcb->adj_stack_ptr;
+  chipreg_t stack_size = (chipreg_t)rtcb->adj_stack_size;
+  chipreg_t stack;
 
-  putreg8(getreg8(Z16F_GPIOA_OUT) | 0x07, Z16F_GPIOA_OUT);
-  putreg8(getreg8(Z16F_GPIOA_DD) & 0xf8, Z16F_GPIOA_DD);
-}
+  _alert("stack_base: %08x\n", stack_base);
+  _alert("stack_size: %08x\n", stack_size);
+  _alert("sp:         %08x\n", sp);
 
-/****************************************************************************
- * Name: board_autoled_on
- ****************************************************************************/
-
-void board_autoled_on(int led)
-{
-  if ((unsigned)led <= 7)
+  if (sp >= stack_base || sp < stack_base - stack_size)
     {
-       putreg8(((getreg8(Z16F_GPIOA_OUT) & 0xf8) | led), Z16F_GPIOA_OUT);
+      _err("ERROR: Stack pointer is not within allocated stack\n");
+      stack = stack_base - stack_size;
+    }
+  else
+    {
+      stack = sp;
+    }
+
+  for (stack = stack & ~0x0f;
+       stack < stack_base;
+       stack += 8 * sizeof(chipreg_t))
+    {
+      chipreg_t *ptr = (chipreg_t *)stack;
+      _alert("%08x: %08x %08x %08x %08x %08x %08x %08x %08x\n",
+            stack, ptr[0], ptr[1], ptr[2], ptr[3],
+            ptr[4], ptr[5], ptr[6], ptr[7]);
     }
 }
 
-/****************************************************************************
- * Name: board_autoled_off
- ****************************************************************************/
-
-void board_autoled_off(int led)
-{
-  if (led >= 1)
-    {
-      board_autoled_on(led - 1);
-    }
-}
-#endif /* CONFIG_ARCH_LEDS */
+#endif /* CONFIG_ARCH_STACKDUMP */

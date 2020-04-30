@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/z16/z16f/z16f2800100zcog/z16f_leds.c
+ * arch/z16/src/common/z16_registerdump.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,75 +18,58 @@
  *
  ****************************************************************************/
 
-/* The z16f2800100zcog board has four LEDs:
- *
- * - Green LED D1 which illuminates in the presence of Vcc
- * - Red LED D2 connected to chip port PA0_T0IN
- * - Yellow LED D3 connected to chip port PA1_T0OUT
- * - Green LED D4 connected to chip port PA2_DE0
- */
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
 
-#include <nuttx/board.h>
-#include <arch/board/board.h>
+#include <stdint.h>
+#include <debug.h>
+
+#include <nuttx/irq.h>
+#include <nuttx/arch.h>
 
 #include "z16_internal.h"
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+#ifdef CONFIG_ARCH_STACKDUMP
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+
+static chipreg_t s_last_regs[XCPTCONTEXT_REGS];
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Public Functions
+ * Name: z16_registerdump
  ****************************************************************************/
 
-/****************************************************************************
- * Name: board_autoled_initialize
- ****************************************************************************/
-
-#ifdef CONFIG_ARCH_LEDS
-void board_autoled_initialize(void)
+static void z16_registerdump(void)
 {
-  /* The following is performed up_board_initialize() as well */
+#ifdef CONFIG_DEBUG_INFO
+  FAR uint32_t *regs32 = (FAR uint32_t *)g_current_regs;
 
-  putreg8(getreg8(Z16F_GPIOA_OUT) | 0x07, Z16F_GPIOA_OUT);
-  putreg8(getreg8(Z16F_GPIOA_DD) & 0xf8, Z16F_GPIOA_DD);
-}
-
-/****************************************************************************
- * Name: board_autoled_on
- ****************************************************************************/
-
-void board_autoled_on(int led)
-{
-  if ((unsigned)led <= 7)
+  if (regs32 == NULL)
     {
-       putreg8(((getreg8(Z16F_GPIOA_OUT) & 0xf8) | led), Z16F_GPIOA_OUT);
+      z16_saveusercontext(s_last_regs);
+      regs32 = (FAR uint32_t *)s_last_regs;
     }
+
+  _alert("R0 :%08x R1 :%08x R2 :%08x R3 :%08x "
+        "R4 :%08x R5 :%08x R6 :%08x R7 :%08x\n"
+        regs32[REG_R0 / 2],  regs32[REG_R1 / 2],  regs32[REG_R2 / 2],
+        regs32[REG_R3 / 2],  regs32[REG_R4 / 2],  regs32[REG_R5 / 2],
+        regs32[REG_R6 / 2],  regs32[REG_R7 / 2]);
+  _alert("R8 :%08x R9 :%08x R10:%08x R11:%08x R12:%08x R13:%08x\n"
+        regs32[REG_R8 / 2],  regs32[REG_R9 / 2],  regs32[REG_R10 / 2],
+        regs3[REG_R11 / 2],  regs32[REG_R12 / 2], regs32[REG_R13 / 2]);
+  _alert("FP :%08x SP :%08x FLG:%04x\n"
+        regs32[REG_R14 / 2], regs32[REG_R15 / 2], regs32[REG_FLAGS]);
+#endif
 }
 
-/****************************************************************************
- * Name: board_autoled_off
- ****************************************************************************/
-
-void board_autoled_off(int led)
-{
-  if (led >= 1)
-    {
-      board_autoled_on(led - 1);
-    }
-}
-#endif /* CONFIG_ARCH_LEDS */
+#endif /* CONFIG_ARCH_STACKDUMP */
