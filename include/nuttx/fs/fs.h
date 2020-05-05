@@ -72,11 +72,7 @@
  */
 
 #if !defined(CONFIG_BUILD_FLAT) && defined(__KERNEL__)
-#  ifdef CONFIG_CPP_HAVE_VARARGS
-#    define _NX_OPEN(p,f,...)  nx_open(p,f,##__VA_ARGS__)
-#  else
-#    define _NX_OPEN           nx_open
-#  endif
+#  define _NX_OPEN             nx_open
 #  define _NX_CLOSE(f)         nx_close(f)
 #  define _NX_READ(f,b,s)      nx_read(f,b,s)
 #  define _NX_WRITE(f,b,s)     nx_write(f,b,s)
@@ -87,11 +83,7 @@
 #  define _NX_SETERRNO(r)      set_errno(-(r))
 #  define _NX_GETERRVAL(r)     (r)
 #else
-#  ifdef CONFIG_CPP_HAVE_VARARGS
-#    define _NX_OPEN(p,f,...)  open(p,f,##__VA_ARGS__)
-#  else
-#    define _NX_OPEN           open
-#  endif
+#  define _NX_OPEN             open
 #  define _NX_CLOSE(f)         close(f)
 #  define _NX_READ(f,b,s)      read(f,b,s)
 #  define _NX_WRITE(f,b,s)     write(f,b,s)
@@ -1220,7 +1212,7 @@ int file_truncate(FAR struct file *filep, off_t length);
 #endif
 
 /****************************************************************************
- * Name: file_ioctl
+ * Name: file_ioctl and file_vioctl
  *
  * Description:
  *   Perform device specific operations.
@@ -1228,7 +1220,7 @@ int file_truncate(FAR struct file *filep, off_t length);
  * Input Parameters:
  *   file     File structure instance
  *   req      The ioctl command
- *   arg      The argument of the ioctl cmd
+ *   ap       The argument of the ioctl cmd
  *
  * Returned Value:
  *   Returns a non-negative number on success;  A negated errno value is
@@ -1237,10 +1229,11 @@ int file_truncate(FAR struct file *filep, off_t length);
  *
  ****************************************************************************/
 
-int file_ioctl(FAR struct file *filep, int req, unsigned long arg);
+int file_vioctl(FAR struct file *filep, int req, va_list ap);
+int file_ioctl(FAR struct file *filep, int req, ...);
 
 /****************************************************************************
- * Name: nx_ioctl
+ * Name: nx_ioctl and nx_vioctl
  *
  * Description:
  *   nx_ioctl() is similar to the standard 'ioctl' interface except that is
@@ -1256,40 +1249,8 @@ int file_ioctl(FAR struct file *filep, int req, unsigned long arg);
  *
  ****************************************************************************/
 
-int nx_ioctl(int fd, int req, unsigned long arg);
-
-/****************************************************************************
- * Name: fs_ioctl
- *
- * Description:
- *   Perform device specific operations.
- *
- * Input Parameters:
- *   fd       File/socket descriptor of device
- *   req      The ioctl command
- *   arg      The argument of the ioctl cmd
- *
- * Returned Value:
- *   >=0 on success (positive non-zero values are cmd-specific)
- *   -1 on failure with errno set properly:
- *
- *   EBADF
- *     'fd' is not a valid descriptor.
- *   EFAULT
- *     'arg' references an inaccessible memory area.
- *   EINVAL
- *     'cmd' or 'arg' is not valid.
- *   ENOTTY
- *     'fd' is not associated with a character special device.
- *   ENOTTY
- *      The specified request does not apply to the kind of object that the
- *      descriptor 'fd' references.
- *
- ****************************************************************************/
-
-#ifdef CONFIG_LIBC_IOCTL_VARIADIC
-int fs_ioctl(int fd, int req, unsigned long arg);
-#endif
+int nx_vioctl(int fd, int req, va_list ap);
+int nx_ioctl(int fd, int req, ...);
 
 /****************************************************************************
  * Name: file_vfcntl
