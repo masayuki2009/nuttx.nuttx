@@ -1,5 +1,9 @@
 /****************************************************************************
- * tools/csvparser.h
+ * arch/risc-v/src/k210/hardware/k210_sysctl.h
+ *
+ * Derives from software originally provided by Canaan Inc
+ *
+ *   Copyright 2018 Canaan Inc
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,51 +22,27 @@
  *
  ****************************************************************************/
 
-#ifndef __TOOLS_CSVPARSER_H
-#define __TOOLS_CSVPARSER_H
+#ifndef __ARCH_RISCV_SRC_K210_HARDWARE_K210_SYSCTL_H
+#define __ARCH_RISCV_SRC_K210_HARDWARE_K210_SYSCTL_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <stdbool.h>
-#include <limits.h>
+#include <nuttx/config.h>
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define LINESIZE      (PATH_MAX > 256 ? PATH_MAX : 256)
+#define K210_SYSCTL_PLL0  (K210_SYSCTL_BASE + 0x08)
 
-#define MAX_FIELDS    16
-#define MAX_PARMSIZE  256
+#define PLL_CLK_R(n)  (n & 0x00000f)
+#define PLL_CLK_F(n)  ((n & 0x0003f0) >> 4)
+#define PLL_CLK_OD(n) ((n & 0x003c00) >> 10)
 
-#define NAME_INDEX    0
-#define HEADER_INDEX  1
-#define COND_INDEX    2
-#define RETTYPE_INDEX 3
-#define PARM1_INDEX   4
+#define K210_SYSCTL_CLKSEL0  (K210_SYSCTL_BASE + 0x20)
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
+#define CLKSEL0_ACLK_SEL(n) (n & 0x00000001)
 
-typedef char csvparm_t[MAX_PARMSIZE];
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-extern bool      g_debug;
-extern char      g_line[LINESIZE + 1];
-extern csvparm_t g_parm[MAX_FIELDS];
-extern int       g_lineno;
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
-char *read_line(FILE *stream);
-int parse_csvline(char *ptr);
-
-#endif /* __TOOLS_CSVPARSER_H */
+#endif /* __ARCH_RISCV_SRC_K210_HARDWARE_K210_SYSCTL_H */
