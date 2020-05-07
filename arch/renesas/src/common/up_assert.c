@@ -90,7 +90,6 @@ static void _up_assert(int errorcode)
 
   if (g_current_regs || running_task()->flink == NULL)
     {
-      up_irq_save();
       for (; ; )
         {
 #if CONFIG_BOARD_RESET_ON_ASSERT >= 1
@@ -178,7 +177,7 @@ void up_assert(const uint8_t *filename, int lineno)
   syslog_flush();
 
 #ifdef CONFIG_BOARD_CRASHDUMP
-  board_crashdump(up_getsp(), running_task(), filename, lineno);
+  board_crashdump(renesas_getsp(), running_task(), filename, lineno);
 #endif
 
   _up_assert(EXIT_FAILURE);
