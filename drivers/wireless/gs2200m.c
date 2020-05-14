@@ -82,7 +82,7 @@
 #define GS2200MWORK LPWORK
 
 #define SPI_MAXFREQ  CONFIG_WL_GS2200M_SPI_FREQUENCY
-#define NRESPMSG     8
+#define NRESPMSG     (16 + 2)
 
 #define MAX_PKT_LEN  1500
 #define MAX_NOTIF_Q  16
@@ -99,6 +99,9 @@
 #define LED_GPIO     30
 #define HAL_TIMEOUT  5000000  /* in us */
 #define WR_MAX_RETRY 100
+
+#define PORT_START   50000
+#define PORT_END     59999
 
 /****************************************************************************
  * Private Data Types
@@ -2015,6 +2018,86 @@ static enum pkt_type_e gs2200m_get_version(FAR struct gs2200m_dev_s *dev)
 #endif
 
 /****************************************************************************
+ * Name: gs2200m_get_cstatus
+ ****************************************************************************/
+
+static enum pkt_type_e gs2200m_get_cstatus(FAR struct gs2200m_dev_s *dev,
+                                           FAR struct gs2200m_name_msg *msg)
+{
+  struct pkt_dat_s pkt_dat;
+  enum pkt_type_e   r;
+  char cmd[16];
+  int i;
+
+  snprintf(cmd, sizeof(cmd), "AT+CID=?\r\n");
+
+  /* Initialize pkt_dat and send */
+
+  memset(&pkt_dat, 0, sizeof(pkt_dat));
+  r = gs2200m_send_cmd(dev, cmd, &pkt_dat);
+
+  if (r != TYPE_OK || pkt_dat.n <= 2)
+    {
+      wlinfo("+++ error: r=%d pkt_dat.msg[0]=%s \n",
+             r, pkt_dat.msg[0]);
+
+      goto errout;
+    }
+
+  /* Find cid in the connection status */
+
+  for (i = 1; i < pkt_dat.n - 2; i++)
+    {
+      int  n;
+      char c;
+      int  a[4];
+      int  p[2];
+      char type[8];
+      char mode[8];
+      memset(type, 0, sizeof(type));
+      memset(mode, 0, sizeof(mode));
+      n = sscanf(pkt_dat.msg[i], "%c %7s %6s %d %d %d.%d.%d.%d",
+                 &c, type, mode, &p[0], &p[1],
+                 &a[0], &a[1], &a[2], &a[3]);
+      ASSERT(9 == n);
+
+      wlinfo("[%d]: %c %s %s %d %d %d.%d.%d.%d \n",
+             i, c, type, mode, p[0], p[1],
+             a[0], a[1], a[2], a[3]);
+
+      if (c == msg->cid)
+        {
+          /* Set family,  port and address (remote only) */
+
+          msg->addr.sin_family = AF_INET;
+
+          if (msg->local)
+            {
+              msg->addr.sin_port = htons(p[0]);
+            }
+          else
+            {
+              char addr[20];
+              msg->addr.sin_port = htons(p[1]);
+              snprintf(addr, sizeof(addr),
+                       "%d.%d.%d.%d", a[0], a[1], a[2], a[3]);
+              inet_aton(addr, &msg->addr.sin_addr);
+            }
+
+          goto errout;
+        }
+    }
+
+  /* Not found */
+
+  r = TYPE_UNMATCH;
+
+errout:
+  _release_pkt_dat(&pkt_dat);
+  return r;
+}
+
+/****************************************************************************
  * Name: gs2200m_ioctl_bind
  ****************************************************************************/
 
@@ -2022,17 +2105,38 @@ static int gs2200m_ioctl_bind(FAR struct gs2200m_dev_s *dev,
                               FAR struct gs2200m_bind_msg *msg)
 {
   enum pkt_type_e type = TYPE_OK;
+  bool auto_assign = false;
+  char port_str[6];
+  uint16_t port;
   char cid = 'z';
   int ret = OK;
 
   wlinfo("+++ start: (cid=%c, port=%s) \n", msg->cid, msg->port);
 
+  port = (uint16_t)strtol(msg->port, NULL, 10);
+
+  if (0 == port)
+    {
+      auto_assign = true;
+      port = PORT_START;
+    }
+
+retry:
+
+  snprintf(port_str, sizeof(port_str), "%d", port);
+
   /* Start TCP/UDP server and retrieve cid */
 
-  type = gs2200m_start_server(dev, msg->port, msg->is_tcp, &cid);
+  type = gs2200m_start_server(dev, port_str, msg->is_tcp, &cid);
 
   if (type != TYPE_OK)
     {
+      if (auto_assign && (port < PORT_END))
+        {
+          port++;
+          goto retry;
+        }
+
       ret = -EINVAL;
       goto errout;
     }
@@ -2120,8 +2224,6 @@ static int gs2200m_ioctl_send(FAR struct gs2200m_dev_s *dev,
 {
   FAR struct gs2200m_bind_msg bmsg;
   enum pkt_type_e type;
-  bool assigned = false;
-  uint16_t s_port;
   int ret = OK;
 
   wlinfo("+++ start: (cid=%c) \n", msg->cid);
@@ -2134,20 +2236,12 @@ static int gs2200m_ioctl_send(FAR struct gs2200m_dev_s *dev,
 
   if (!msg->is_tcp && 'z' == msg->cid)
     {
+      /* NOTE: need to assign port automatically */
+
       memset(&bmsg, 0, sizeof(bmsg));
+      ret = gs2200m_ioctl_bind(dev, &bmsg);
+      ASSERT(0 == ret);
 
-      for (s_port = 50000; s_port < 60000; s_port++)
-        {
-          snprintf(bmsg.port, sizeof(bmsg.port), "%d", s_port);
-
-          if (0 == gs2200m_ioctl_bind(dev, &bmsg))
-            {
-              assigned = true;
-              break;
-            }
-        }
-
-      ASSERT(assigned);
       wlinfo("+++ cid is assigned for udp (cid=%c) \n", bmsg.cid);
       msg->cid = bmsg.cid;
     }
@@ -2529,6 +2623,41 @@ static int gs2200m_ioctl_ifreq(FAR struct gs2200m_dev_s *dev,
 }
 
 /****************************************************************************
+ * Name: gs2200m_ioctl_name
+ ****************************************************************************/
+
+static int gs2200m_ioctl_name(FAR struct gs2200m_dev_s *dev,
+                              FAR struct gs2200m_name_msg *msg)
+{
+  enum pkt_type_e r;
+  int ret = 0;
+
+  /* Obtain connection status */
+
+  r = gs2200m_get_cstatus(dev, msg);
+
+  if (r != TYPE_OK)
+    {
+      ret = -EINVAL;
+      goto errout;
+    }
+
+  if (msg->local)
+    {
+      /* Copy local address from net_dev */
+
+      memcpy(&msg->addr.sin_addr,
+             &dev->net_dev.d_ipaddr,
+             sizeof(msg->addr.sin_addr)
+             );
+    }
+
+errout:
+
+  return ret;
+}
+
+/****************************************************************************
  * Name: gs2200m_ioctl
  ****************************************************************************/
 
@@ -2637,6 +2766,15 @@ static int gs2200m_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
             (struct gs2200m_ifreq_msg *)arg;
 
           ret = gs2200m_ioctl_ifreq(dev, msg);
+          break;
+        }
+
+      case GS2200M_IOC_NAME:
+        {
+          struct gs2200m_name_msg *msg =
+            (struct gs2200m_name_msg *)arg;
+
+          ret = gs2200m_ioctl_name(dev, msg);
           break;
         }
 
