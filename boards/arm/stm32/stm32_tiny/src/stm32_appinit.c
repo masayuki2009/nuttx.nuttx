@@ -49,6 +49,10 @@
 #include "stm32.h"
 #include "stm32_tiny.h"
 
+#ifdef CONFIG_WL_NRF24L01
+#include "stm32_nrf24l01.h"
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -80,9 +84,9 @@
 
 int board_app_initialize(uintptr_t arg)
 {
-#ifdef CONFIG_PWM
-  int ret;
+  int ret = OK;
 
+#ifdef CONFIG_PWM
   /* Initialize PWM and register the PWM device. */
 
   ret = stm32_pwm_setup();
@@ -93,9 +97,14 @@ int board_app_initialize(uintptr_t arg)
 #endif
 
 #if defined(CONFIG_WL_NRF24L01)
-  syslog(LOG_INFO, "Register the nRF24L01 module");
-  stm32_wlinitialize();
+  /* Initialize the NRF24L01 wireless module */
+
+  ret = board_nrf24l01_initialize(2);
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: board_nrf24l01_initialize failed: %d\n", ret);
+    }
 #endif
 
-  return OK;
+  return ret;
 }

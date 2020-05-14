@@ -64,8 +64,8 @@
 #define HAVE_ELF        1
 #define HAVE_MODSYMS    1
 
-/* Can't support MMC/SD features if mountpoints are disabled or if SDIO support
- * is not enabled.
+/* Can't support MMC/SD features if mountpoints are disabled or if SDIO
+ * support is not enabled.
  */
 
 #if defined(CONFIG_DISABLE_MOUNTPOINT) || !defined(CONFIG_STM32_SDIO) || \
@@ -144,6 +144,7 @@
 #endif
 
 /* Olimex-STM32-P407 GPIOs **************************************************/
+
 /* LEDs */
 
 #define GPIO_LED1         (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
@@ -169,12 +170,6 @@
 #define GPIO_BTN_DOWN     (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTG|GPIO_PIN8)
 #define GPIO_BTN_CENTER   (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTG|GPIO_PIN15)
 
-/* DHTxx pin configuration */
-
-#define GPIO_DHTXX_PIN          (GPIO_PORTG|GPIO_PIN9)
-#define GPIO_DHTXX_PIN_OUTPUT   (GPIO_OUTPUT|GPIO_FLOAT|GPIO_SPEED_100MHz|GPIO_DHTXX_PIN)
-#define GPIO_DHTXX_PIN_INPUT    (GPIO_INPUT|GPIO_FLOAT|GPIO_DHTXX_PIN)
-
 /* USB OTG FS
  *
  * PA9  OTG_FS_VBUS VBUS sensing (also connected to the green LED)
@@ -195,7 +190,7 @@
 #ifndef __ASSEMBLY__
 
 /****************************************************************************
- * Public Functions
+ * Public Function Prototypes
  ****************************************************************************/
 
 /****************************************************************************
@@ -218,25 +213,25 @@ int stm32_bringup(void);
  * Name: stm32_stram_configure
  *
  * Description:
- *   Initialize to access external SRAM.  SRAM will be visible at the FSMC Bank
- *   NOR/SRAM2 base address (0x64000000)
+ *   Initialize to access external SRAM.  SRAM will be visible at the FSMC
+ *   Bank NOR/SRAM2 base address (0x64000000)
  *
- *   General transaction rules.  The requested AHB transaction data size can be 8-,
- *   16- or 32-bit wide whereas the SRAM has a fixed 16-bit data width. Some simple
- *   transaction rules must be followed:
+ *   General transaction rules.  The requested AHB transaction data size can
+ *   be 8-, 16- or 32-bit wide whereas the SRAM has a fixed 16-bit data
+ *   width. Some simple transaction rules must be followed:
  *
  *   Case 1: AHB transaction width and SRAM data width are equal
  *     There is no issue in this case.
  *   Case 2: AHB transaction size is greater than the memory size
- *     In this case, the FSMC splits the AHB transaction into smaller consecutive
- *     memory accesses in order to meet the external data width.
+ *     In this case, the FSMC splits the AHB transaction into smaller
+ *     consecutive memory accesses in order to meet the external data width.
  *   Case 3: AHB transaction size is smaller than the memory size.
  *     SRAM supports the byte select feature.
  *     a) FSMC allows write transactions accessing the right data through its
  *        byte lanes (NBL[1:0])
- *     b) Read transactions are allowed (the controller reads the entire memory
- *        word and uses the needed byte only). The NBL[1:0] are always kept low
- *        during read transactions.
+ *     b) Read transactions are allowed (the controller reads the entire
+ *        memory word and uses the needed byte only). The NBL[1:0] are always
+ *        kept low during read transactions.
  *
  ****************************************************************************/
 
@@ -248,8 +243,8 @@ void stm32_stram_configure(void);
  * Name: stm32_usb_configure
  *
  * Description:
- *   Called from stm32_boardinitialize very early in inialization to setup USB-related
- *   GPIO pins for the Olimex STM32 P407 board.
+ *   Called from stm32_boardinitialize very early in inialization to setup
+ *   USB-related GPIO pins for the Olimex STM32 P407 board.
  *
  ****************************************************************************/
 
@@ -261,9 +256,9 @@ void weak_function stm32_usb_configure(void);
  * Name: stm32_usbhost_setup
  *
  * Description:
- *   Called at application startup time to initialize the USB host functionality.
- *   This function will start a thread that will monitor for device connection/
- *   disconnection events.
+ *   Called at application startup time to initialize the USB host
+ *   functionality. This function will start a thread that will monitor for
+ *   device connection/disconnection events.
  *
  ****************************************************************************/
 
@@ -293,18 +288,6 @@ int stm32_adc_setup(void);
 
 #ifdef CONFIG_CAN
 int stm32_can_setup(void);
-#endif
-
-/****************************************************************************
- * Name: stm32_dhtxx_initialize
- *
- * Description:
- *   Called to initialize the DHTxx sensor
- *
- ****************************************************************************/
-
-#ifdef CONFIG_SENSORS_DHTXX
-int stm32_dhtxx_initialize(FAR const char *devpath);
 #endif
 
 #endif /* __ASSEMBLY__ */

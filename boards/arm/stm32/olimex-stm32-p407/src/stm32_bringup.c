@@ -65,6 +65,10 @@
 #include "stm32.h"
 #include "olimex-stm32-p407.h"
 
+#ifdef CONFIG_SENSORS_DHTXX
+#include "stm32_dhtxx.h"
+#endif
+
 /****************************************************************************
  * Public Data
  ****************************************************************************/
@@ -117,6 +121,7 @@ int stm32_bringup(void)
 
 #ifdef HAVE_MMCSD
   /* Mount the SDIO-based MMC/SD block driver */
+
   /* First, get an instance of the SDIO interface */
 
   sdio = sdio_initialize(MMCSD_SLOTNO);
@@ -144,7 +149,7 @@ int stm32_bringup(void)
    * the slot so we are reduced to guessing.
    */
 
-   sdio_mediachange(sdio, true);
+  sdio_mediachange(sdio, true);
 #endif
 
 #ifdef CONFIG_CAN
@@ -201,7 +206,7 @@ int stm32_bringup(void)
 #endif
 
 #ifdef CONFIG_SENSORS_DHTXX
-  ret = stm32_dhtxx_initialize("/dev/dht0");
+  ret = board_dhtxx_initialize(0);
   if (ret < 0)
     {
       syslog(LOG_ERR, "ERROR: stm32_dhtxx_initialize() failed: %d\n", ret);
