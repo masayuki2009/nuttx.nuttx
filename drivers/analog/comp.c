@@ -274,7 +274,9 @@ static int comp_open(FAR struct file *filep)
         }
       else
         {
-          /* Check if this is the first time that the driver has been opened. */
+          /* Check if this is the first time that the driver has been
+           * opened.
+           */
 
           if (tmp == 1)
             {
@@ -411,10 +413,10 @@ int comp_register(FAR const char *path, FAR struct comp_dev_s *dev)
   /* Initialize semaphores */
 
   nxsem_init(&dev->ad_sem, 0, 1);
-  nxsem_setprotocol(&dev->ad_sem, SEM_PRIO_NONE);
+  nxsem_set_protocol(&dev->ad_sem, SEM_PRIO_NONE);
 
   nxsem_init(&dev->ad_readsem, 0, 0);
-  nxsem_setprotocol(&dev->ad_readsem, SEM_PRIO_NONE);
+  nxsem_set_protocol(&dev->ad_readsem, SEM_PRIO_NONE);
 
   /* Bind the upper-half callbacks to the lower half COMP driver */
 

@@ -834,7 +834,9 @@ static ssize_t can_write(FAR struct file *filep, FAR const char *buffer,
           nexttail = 0;
         }
 
-      /* If the XMIT FIFO becomes full, then wait for space to become available */
+      /* If the XMIT FIFO becomes full, then wait for space to become
+       * available.
+       */
 
       while (nexttail == fifo->tx_head)
         {
@@ -1202,7 +1204,7 @@ int can_register(FAR const char *path, FAR struct can_dev_s *dev)
        */
 
       nxsem_init(&dev->cd_rtr[i].cr_sem, 0, 0);
-      nxsem_setprotocol(&dev->cd_rtr[i].cr_sem, SEM_PRIO_NONE);
+      nxsem_set_protocol(&dev->cd_rtr[i].cr_sem, SEM_PRIO_NONE);
       dev->cd_rtr[i].cr_msg = NULL;
     }
 
@@ -1341,7 +1343,7 @@ int can_receive(FAR struct can_dev_s *dev, FAR struct can_hdr_s *hdr,
            */
 
           sval = 0;
-          if (nxsem_getvalue(&fifo->rx_sem, &sval) <= 0)
+          if (nxsem_get_value(&fifo->rx_sem, &sval) <= 0)
             {
               can_givesem(&fifo->rx_sem);
             }

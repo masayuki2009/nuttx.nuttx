@@ -641,11 +641,15 @@ static void max11802_worker(FAR void *arg)
       xdiff = x > priv->threshx ? (x - priv->threshx) : (priv->threshx - x);
       ydiff = y > priv->threshy ? (y - priv->threshy) : (priv->threshy - y);
 
-      /* Check the thresholds.  Bail if there is no significant difference */
+      /* Check the thresholds.  Bail if there is no significant
+       * difference.
+       */
 
       if (xdiff < CONFIG_MAX11802_THRESHX && ydiff < CONFIG_MAX11802_THRESHY)
         {
-          /* Little or no change in either direction ... don't report anything. */
+          /* Little or no change in either direction ... don't report
+           * anything.
+           */
 
           goto ignored;
         }
@@ -1174,7 +1178,7 @@ int max11802_register(FAR struct spi_dev_s *spi,
    * have priority inheritance enabled.
    */
 
-  nxsem_setprotocol(&priv->waitsem, SEM_PRIO_NONE);
+  nxsem_set_protocol(&priv->waitsem, SEM_PRIO_NONE);
 
   /* Make sure that interrupts are disabled */
 

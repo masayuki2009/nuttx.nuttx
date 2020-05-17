@@ -138,7 +138,9 @@ static int adc_open(FAR struct file *filep)
         }
       else
         {
-          /* Check if this is the first time that the driver has been opened. */
+          /* Check if this is the first time that the driver has been
+           * opened.
+           */
 
           if (tmp == 1)
             {
@@ -323,7 +325,7 @@ static ssize_t adc_read(FAR struct file *filep, FAR char *buffer,
 
           if (msglen == 1)
             {
-              /* Only one channel, return MS 8-bits of the sample*/
+              /* Only one channel, return MS 8-bits of the sample. */
 
               buffer[nread] = msg->am_data >> 24;
             }
@@ -613,7 +615,7 @@ int adc_register(FAR const char *path, FAR struct adc_dev_s *dev)
    * priority inheritance enabled.
    */
 
-  nxsem_setprotocol(&dev->ad_recv.af_sem, SEM_PRIO_NONE);
+  nxsem_set_protocol(&dev->ad_recv.af_sem, SEM_PRIO_NONE);
 
   /* Reset the ADC hardware */
 

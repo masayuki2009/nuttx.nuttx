@@ -111,7 +111,9 @@
 
 #define TUN_WDDELAY  (1 * CLK_TCK)
 
-/* This is a helper pointer for accessing the contents of the Ethernet header */
+/* This is a helper pointer for accessing the contents of the Ethernet
+ * header.
+ */
 
 #ifdef CONFIG_NET_ETHERNET
 #  define BUF ((FAR struct eth_hdr_s *)priv->dev.d_buf)
@@ -1102,8 +1104,8 @@ static int tun_dev_init(FAR struct tun_device_s *priv,
    * priority inheritance enabled.
    */
 
-  nxsem_setprotocol(&priv->read_wait_sem, SEM_PRIO_NONE);
-  nxsem_setprotocol(&priv->write_wait_sem, SEM_PRIO_NONE);
+  nxsem_set_protocol(&priv->read_wait_sem, SEM_PRIO_NONE);
+  nxsem_set_protocol(&priv->write_wait_sem, SEM_PRIO_NONE);
 
   /* Create a watchdog for timing polling for and timing of transmissions */
 

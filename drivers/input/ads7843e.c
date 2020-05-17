@@ -644,7 +644,9 @@ static void ads7843e_worker(FAR void *arg)
 
       if (xdiff < CONFIG_ADS7843E_THRESHX && ydiff < CONFIG_ADS7843E_THRESHY)
         {
-          /* Little or no change in either direction ... don't report anything. */
+          /* Little or no change in either direction ... don't report
+           * anything.
+           */
 
           goto ignored;
         }
@@ -1182,7 +1184,7 @@ int ads7843e_register(FAR struct spi_dev_s *spi,
    * have priority inheritance enabled.
    */
 
-  nxsem_setprotocol(&priv->waitsem, SEM_PRIO_NONE);
+  nxsem_set_protocol(&priv->waitsem, SEM_PRIO_NONE);
 
   /* Make sure that interrupts are disabled */
 
